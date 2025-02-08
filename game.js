@@ -230,9 +230,26 @@ window.addEventListener("load", () => {
 
     const player = new Player(new Point(200, 200))
 
+    const audioContext = new AudioContext()
+    const minFrequency = 100
+    const maxFrequency = 10000
+
+    const oscillators = []
+
+    for (let i = 0; i < outputCanvas.width; i++) {
+        const oscillator = audioContext.createOscillator()
+        oscillator.type = "sine"
+        oscillator.connect(audioContext.destination)
+        oscillator.frequency.value = minFrequency + i / (maxFrequency - minFrequency)
+
+        oscillators.push(oscillator)
+    }
+
     renderMaze2D(topProjection, maze, player)
 
     window.addEventListener("keydown", (e) => {
+        oscillators.forEach(oscillator => oscillator.start())
+
         switch (e.code) {
             case "ArrowLeft":
                 player.direction -= 0.1 
