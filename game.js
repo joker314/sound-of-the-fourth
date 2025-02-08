@@ -47,6 +47,48 @@
 //         ) 
 //     }
 // }
+
+class Matrix {
+    constructor (rows) {
+        this.rows = rows
+        console.assert(rows.every(row => row.length === rows[0].length))
+    }
+
+    negate () {
+        return new Matrix(this.rows.map(row => row.map(x => -x)))
+    }
+
+    transform3DVector(vector) {
+        console.assert(this.rows[0].length === 3)
+
+        return new Vector3d(...this.rows.map(row => (new Vector3d(...row)).dot(vector)))
+    }
+
+    static pitchMatrix(angle) {
+        return new Matrix([
+            [Math.cos(angle), 0, Math.sin(angle)],
+            [0, 1, 0],
+            [-Math.sin(angle), 0, Math.cos(angle)]
+        ])
+    }
+
+    static rollMatrix(angle) {
+        return new Matrix([
+            [1, 0, 0],
+            [0, Math.cos(angle), -Math.sin(angle)],
+            [0, Math.sin(angle), Math.cos(angle)]
+        ])
+    }
+
+    static yawMatrix(angle) {
+        return new Matrix([
+            [Math.cos(angle), -Math.sin(angle), 0],
+            [Math.sin(angle), Math.cos(angle), 0],
+            [0, 0, 1]
+        ])
+    }
+}
+
 class Vector3d {
     constructor(x, y, z) {
         this.x = x;
@@ -457,8 +499,17 @@ class Ray {
 class Player {
     constructor (position) {
         this.position = position
-        this.direction = 0          // Yaw (rotation in the horizontal plane)
-        this.theta = Math.PI / 2    // Pitch (for a horizontal view, theta=pi/2)
+        
+        // Any orthonormal basis
+        this.forward = new Vector3d(1, 0, 0)
+        this.right = new Vector3d(0, 1, 0)
+        this.up = new Vector3d(0, 0, 1)
+    }
+
+    updateBasisByMatrix(matrix) {
+        this.forward = matrix.transform3DVector(this.forward)
+        this.right = matrix.transform3DVector(this.right)
+        this.up = matrix.transform3DVector(this.up)
     }
 
     look(maze) {
@@ -466,7 +517,7 @@ class Player {
             wall.color = "black"
         }
 
-        const ray = new Ray3d(this.position, Vector3d.ofUnitDirection(this.direction, this.theta))
+        const ray = new Ray3d(this.position, this.forward)
         const closestWall = ray.findFirstWall(maze.walls)
 
         if (closestWall) {
@@ -491,7 +542,6 @@ class Player {
         const halfWidth = aspect * halfHeight;
     
         // Compute camera basis vectors
-        const forward = Vector3d.ofUnitDirection(this.theta, this.direction).normalize();
         const worldUp = new Vector3d(0, 0, 1);
         // let right = forward.cross(worldUp).normalize();
         // if (right.length() === 0) {
@@ -501,9 +551,6 @@ class Player {
         // console.log(up)
 
         // const up = Vector3d.ofUnitDirection(this.theta, this.direction).normalize();
-        const up = Vector3d.ofUnitDirection(this.theta - Math.PI / 2, this.direction).normalize();
-        const right = forward.negate().cross(up).normalize()
-
         // console.log(forward)
     
         // Cast rays for each block on the screen
@@ -518,9 +565,9 @@ class Player {
                 const vScaled = v * halfHeight;
     
                 // Compute the ray direction using the camera basis
-                const rayDir = forward
-                    .add(right.scale(uScaled))
-                    .add(up.scale(vScaled))
+                const rayDir = this.forward
+                    .add(this.right.scale(uScaled))
+                    .add(this.up.scale(vScaled))
                     .normalize();
     
                 const ray = new Ray3d(this.position, rayDir);
@@ -553,16 +600,24 @@ const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
     new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
-    new Sphere(new Vector3d(400, 200, 0), 100)
+    new Sphere(new Vector3d(400, 100, 0), 50),
+    new Sphere(new Vector3d(400, 300, 0), 80),
 ])
 
 function renderMaze2D(ctx, maze, player) {
+    const mapUp = new Vector3d(0, 1, 0)
+    const mapRight = new Vector3d(1, 0, 0)
+
+    const phi = Math.atan2(player.forward.dot(mapUp), player.forward.dot(mapRight))
+
+    console.log("components", player.forward, player.forward.dot(mapUp), player.forward.dot(mapRight))
+
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
     // Render the player
     ctx.beginPath()
     ctx.strokeStyle = "red"
-    ctx.arc(player.position.x, player.position.y, 20, player.direction - Math.PI / 2, player.direction + Math.PI / 2)
+    ctx.arc(player.position.x, player.position.y, 20, phi - Math.PI / 4, phi + Math.PI / 4)
     ctx.stroke()
 
     // Recolour the walls
@@ -625,25 +680,39 @@ renderMaze2D(topProjection, maze, player)
 
 window.addEventListener("click", () => audioContext.resume())
 
+const increaseYaw = Matrix.yawMatrix(0.1)
+const increasePitch = Matrix.pitchMatrix(0.1)
+const increaseRoll = Matrix.rollMatrix(0.1)
+
+const decreaseYaw = Matrix.yawMatrix(-0.1)
+const decreasePitch = Matrix.pitchMatrix(-0.1)
+const decreaseRoll = Matrix.rollMatrix(-0.1)
+
 window.addEventListener("keydown", (e) => {
     switch (e.code) {
         case "ArrowLeft":
-            player.direction -= 0.1 
+            player.updateBasisByMatrix(decreaseYaw)
             break;
         case "ArrowRight":
-            player.direction += 0.1 
+            player.updateBasisByMatrix(increaseYaw)
             break;
         case "ArrowUp":
-            player.position = player.position.moveInDirection(5, player.direction, player.theta)
+            player.position = player.position.add(player.forward.scale(5))
             break;
         case "ArrowDown":
-            player.position = player.position.moveInDirection(-5, player.direction, player.theta)
+            player.position = player.position.add(player.forward.scale(-5))
             break;
         case "KeyM":
-            player.theta += 0.1
+            player.updateBasisByMatrix(decreasePitch)
             break;
         case "KeyN":
-            player.theta -= 0.1
+            player.updateBasisByMatrix(increasePitch)
+            break;
+        case "KeyB":
+            player.updateBasisByMatrix(increaseRoll)
+            break;
+        case "KeyV":
+            player.updateBasisByMatrix(decreaseRoll)
             break;
     }
     renderMaze2D(topProjection, maze, player)
