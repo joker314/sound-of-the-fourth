@@ -13,6 +13,10 @@ class Point {
         return new Point(this.x + deltaX, this.y + deltaY)
     }
 
+    moveInDirection(distance, direction) {
+        return new Point(this.x + distance * Math.cos(direction), this.y + distance * Math.sin(direction))
+    }
+
     scale(factor) {
        return new Point(this.x * factor, this.y * factor)
     }
@@ -228,9 +232,22 @@ window.addEventListener("load", () => {
 
     renderMaze2D(topProjection, maze, player)
 
-    topProjectionCanvas.addEventListener("click", () => {
-       player.direction += 0.1 
-       renderMaze2D(topProjection, maze, player)
-       player.rayTrace(maze, output)
+    window.addEventListener("keydown", (e) => {
+        switch (e.code) {
+            case "ArrowLeft":
+                player.direction -= 0.1 
+                break;
+            case "ArrowRight":
+                player.direction += 0.1 
+                break;
+            case "ArrowUp":
+                player.position = player.position.moveInDirection(5, player.direction)
+                break;
+            case "ArrowDown":
+                player.position = player.position.moveInDirection(-5, player.direction)
+                break;
+        }
+        renderMaze2D(topProjection, maze, player)
+        player.rayTrace(maze, output)
     })
 })
