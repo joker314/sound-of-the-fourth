@@ -42,6 +42,33 @@ class Matrix {
             [0, 0, 0, 1]
         ])
     }
+
+    static AMatrix(angle) {
+        return new Matrix([
+            [Math.cos(angle), 0, 0, -Math.sin(angle)],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [Math.sin(angle), 0, 0, Math.cos(angle)]
+        ])
+    }
+
+    static BMatrix(angle) {
+        return new Matrix([
+            [1, 0, 0, 0],
+            [0, Math.cos(angle), 0, -Math.sin(angle)],
+            [0, 0, 1, 0],
+            [0, Math.sin(angle), 0, Math.cos(angle)]
+        ])
+    }
+
+    static CMatrix(angle) {
+        return new Matrix([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, Math.cos(angle), -Math.sin(angle)],
+            [0, 0, Math.sin(angle), Math.cos(angle)]
+        ])
+    }
 }
 
 class Vector4d {
@@ -585,10 +612,16 @@ window.addEventListener("click", () => audioContext.resume())
 const increaseYaw = Matrix.yawMatrix(0.1)
 const increasePitch = Matrix.pitchMatrix(0.1)
 const increaseRoll = Matrix.rollMatrix(0.1)
+const increaseA = Matrix.AMatrix(0.1)
+const increaseB = Matrix.BMatrix(0.1)
+const increaseC = Matrix.CMatrix(0.1)
 
 const decreaseYaw = Matrix.yawMatrix(-0.1)
 const decreasePitch = Matrix.pitchMatrix(-0.1)
 const decreaseRoll = Matrix.rollMatrix(-0.1)
+const decreaseA = Matrix.AMatrix(-0.1)
+const decreaseB = Matrix.BMatrix(-0.1)
+const decreaseC = Matrix.CMatrix(-0.1)
 
 window.addEventListener("keydown", (e) => {
     switch (e.code) {
@@ -624,6 +657,14 @@ window.addEventListener("keydown", (e) => {
         case "KeyU":
             player.position = player.position.add(player.up.scale(-5))
             break;
+        // Translate kata
+        case "KeyA":
+            player.position = player.position.add(player.ana.scale(-5))
+            break;
+        // Translate ana
+        case "KeyS":
+            player.position = player.position.add(player.ana.scale(5))
+            break;
         // Rotate up (pitch) 
         case "KeyM":
             player.updateBasisByMatrix(decreasePitch)
@@ -639,6 +680,30 @@ window.addEventListener("keydown", (e) => {
         // Rotate anticlockwise (roll)
         case "KeyV":
             player.updateBasisByMatrix(decreaseRoll)
+            break;
+        // Rotate-A "backwards"
+        case "KeyD":
+            player.updateBasisByMatrix(decreaseA)
+            break;
+        // Rotate-A "forwards"
+        case "KeyF":
+            player.updateBasisByMatrix(increaseA)
+            break;
+        // Rotate-B "backwards"
+        case "KeyG":
+            player.updateBasisByMatrix(decreaseB)
+            break;
+        // Rotate-B "forwards"
+        case "KeyH":
+            player.updateBasisByMatrix(increaseB)
+            break;
+        // Rotate-C "backwards"
+        case "KeyJ":
+            player.updateBasisByMatrix(decreaseC)
+            break;
+        // Rotate-C "forwards"
+        case "KeyK":
+            player.updateBasisByMatrix(increaseC)
             break;
     }
     renderMaze2D(topProjection, maze, player)
