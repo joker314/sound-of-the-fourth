@@ -155,6 +155,32 @@ class Player {
             closestWall.color = "blue"
         }
     }
+
+    rayTrace(maze, output) {
+        output.clearRect(0, 0, output.canvas.width, output.canvas.height)
+        const fieldOfView = Math.PI / 2
+        
+        const base = output.canvas.height - 20
+        
+        for (let i = 0; i < output.canvas.width; i++) {
+            const angleOffset = -fieldOfView/2 + (i * fieldOfView / output.canvas.width)
+            const angle = this.direction + angleOffset
+
+            const ray = new Ray(this.position, angle)
+            const closestWall = ray.findFirstWall(maze.walls)
+
+            if (closestWall) {
+                const fisheyeHeight = 10000 / closestWall.distanceAlongRay(ray)
+                const height = fisheyeHeight * Math.cos(angleOffset)
+
+                output.beginPath()
+                output.strokeStyle = "orange"
+                output.moveTo(i, base)
+                output.lineTo(i, base - height)
+                output.stroke()
+            }
+        }
+    }
 }
 
 class Maze {
@@ -192,8 +218,11 @@ function renderMaze2D(ctx, maze, player) {
 }
 
 window.addEventListener("load", () => {
-    const topProjectionCanvas = document.querySelector("canvas")
+    const topProjectionCanvas = document.querySelector("#top")
     const topProjection = topProjectionCanvas.getContext("2d")
+
+    const outputCanvas = document.querySelector("#raytraced")
+    const output = outputCanvas.getContext("2d")
 
     const player = new Player(new Point(200, 200))
 
@@ -202,5 +231,6 @@ window.addEventListener("load", () => {
     topProjectionCanvas.addEventListener("click", () => {
        player.direction += 0.1 
        renderMaze2D(topProjection, maze, player)
+       player.rayTrace(maze, output)
     })
 })
