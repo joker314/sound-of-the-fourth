@@ -247,7 +247,7 @@ class Sphere {
         
         const possibleDistances = possibleDistancesUnfiltered.filter(distance => distance >= 0)
 
-        possibleDistances.sort()
+        possibleDistances.sort((a, b) => a - b)
 
         if (possibleDistances.length === 0) {
             console.log(ray3d.startPoint, directionDotCentre, rayUnit, oMinusC, possibleDistancesUnfiltered)
@@ -340,15 +340,13 @@ class Player {
                 const centre = output.canvas.height / 2
 
                 if (closestWall) {
-                    const distance = 10000 / (closestWall.distanceAlongRay(ray)) / output.canvas.height
+                    const distance = Math.cos(phi) * 100000 / (closestWall.distanceAlongRay(ray))
 
                     output.beginPath()
                     output.strokeStyle = "purple"
-                    output.fillStyle = "orange"
-                    output.rect(i, centre - distance / 2, i+1, centre + distance / 2)
-                    output.fill()
+                    output.moveTo(i, centre - distance / 2)
+                    output.lineTo(i, centre + distance / 2)
                     output.stroke()
-                    output.endPath()
 
                     gains[i].gain.value = distance
                 } else {
