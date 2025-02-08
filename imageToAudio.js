@@ -35,15 +35,15 @@ for (const point of points) {
 }
 srcCtx.stroke();
 
-let circlePos = {x: 0.3, y: 0.5};
+let circle = {x: 0.3, y: 0.5, r: 0.3};
 
 const getAmplitude = point => {
-    if ((point[0] - circlePos.x)**2 + (point[1] - circlePos.y)**2 < 0.3**2) {
+    if ((point[0] - circle.x)**2 + (point[1] - circle.y)**2 < circle.r**2) {
         return 1
     }
-    if ((point[0] - 0.1)**2 + (point[1] - 0.9)**2 < 0.2**2) {
-        return 1
-    }
+    // if ((point[0] - 0.1)**2 + (point[1] - 0.9)**2 < 0.2**2) {
+    //     return 1
+    // }
     return 0;
 }
 
@@ -77,13 +77,17 @@ for (const point of points) {
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+const minFreq = 100;
+const maxFreq = 10000;
+
 const gainNodes = Array(points.length);
 for (let i=0; i < points.length; i++) {
     const point = points[i];
     const gainNode = audioCtx.createGain();
     gainNode.gain.value = 0;
     gainNode.connect(audioCtx.destination);
-    const freq = 100 + (10000-100) * i/points.length;
+    // const freq = minFreq + (maxFreq-minFreq) * i/points.length;
+    const freq = Math.exp(Math.log(minFreq) + i / points.length * (Math.log(maxFreq) - Math.log(minFreq)));
     const oscillator = audioCtx.createOscillator();
     oscillator.type = 'sine';
     oscillator.frequency.value = freq;
@@ -103,10 +107,11 @@ function createSound({duration = 2} = {}) {
     //     oscillator.stop(audioCtx.currentTime + duration);
     // });
 
+
     for (let i=0; i < points.length; i++) {
         const point = points[i];
         const gainNode = gainNodes[i];
-        gainNode.gain.value = getAmplitude(point) * 0.1;
+        gainNode.gain.value = getAmplitude(point) * 0.05;
     }
 }
 
@@ -128,13 +133,17 @@ const render = () => {
 
 document.body.addEventListener("keydown", e => {
     if (e.key === 'ArrowDown') {
-        circlePos.y += 0.02;
+        circle.y += 0.02;
     } else if (e.key === 'ArrowUp') {
-        circlePos.y -= 0.02;
+        circle.y -= 0.02;
     } else if (e.key === 'ArrowLeft') {
-        circlePos.x -= 0.02;
+        circle.x -= 0.02;
     } else if (e.key === 'ArrowRight') {
-        circlePos.x += 0.02;
+        circle.x += 0.02;
+    } else if (e.key === '[') {
+        circle.r -= 0.02;
+    } else if (e.key === ']') {
+        circle.r += 0.02;
     }
     render()
     audioCtx.resume()
