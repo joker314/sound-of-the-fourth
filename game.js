@@ -507,7 +507,7 @@ class Player {
 
         // const up = Vector3d.ofUnitDirection(this.theta, this.direction).normalize();
         const up = Vector3d.ofUnitDirection(this.theta - Math.PI / 2, this.direction).normalize();
-        const right = forward.cross(up).normalize()
+        const right = forward.negate().cross(up).normalize()
 
         // console.log(forward)
     
