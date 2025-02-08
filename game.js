@@ -10,7 +10,7 @@ class Vector3d {
     }
 
     length() {
-        return Math.sqrt([...this].map(u => u * u))
+        return Math.sqrt([...this].map(u => u * u).reduce((a, b) => a + b))
     }
 
     dot(otherVector) {
@@ -23,19 +23,25 @@ class Vector3d {
         return new Vector3d(this.x + deltaX, this.y + deltaY, this.z + deltaZ)
     }
 
+    moveInDirection(distance, phi, theta) {
+        console.log("Moving d/phi/theta", distance, phi, theta, "so along vector", Vector3d.ofUnitDirection(theta, phi).scale(distance))
+        console.log("Move in direction outputs", this.translate(Vector3d.ofUnitDirection(theta, phi).scale(distance)))
+        return this.translate(Vector3d.ofUnitDirection(theta, phi).scale(distance))
+    }
+
     scale(factor) {
         return new Vector3d(...[...this].map(u => factor * u))
     }
 
     negate() {
-        return self.scale(-1)
+        return this.scale(-1)
     }
 
     static ofUnitDirection(theta, phi) {
         return new Vector3d(
             Math.sin(theta) * Math.cos(phi),
             Math.sin(theta) * Math.sin(phi),
-            Math.cos(phi)
+            Math.cos(theta)
         ) 
     }
 }
@@ -56,6 +62,7 @@ class Point {
     }
 
     moveInDirection(distance, direction) {
+        console.log("using the old move in direction")
         return new Point(this.x + distance * Math.cos(direction), this.y + distance * Math.sin(direction))
     }
 
@@ -147,19 +154,51 @@ class Wall {
 }
 
 class Ray3d {
-    constructor (phi, theta) {
+    constructor (startPoint, phi, theta) {
+        this.startPoint = startPoint
         this.phi = phi
         this.theta = theta
     }
 
     unitVector() {
-        return Vector3d.ofUnitDirection(this.phi, this.theta)
+        return Vector3d.ofUnitDirection(this.theta, this.phi)
+    }
+
+    getPhi() {
+        return this.phi
+    }
+
+    findFirstWall(walls) {
+        const firstWall = walls.toSorted((a, b) => {
+            const aDistance = a.distanceAlongRay(this)
+            const bDistance = b.distanceAlongRay(this)
+
+            if (aDistance < 0 || aDistance === Infinity) {
+                return 1
+            }
+
+            if (bDistance < 0 || bDistance === Infinity) {
+                return -1
+            }
+
+            return aDistance - bDistance 
+        })[0]
+
+        const firstWallDistance = firstWall.distanceAlongRay(this)
+
+        if (firstWallDistance < 0 || firstWallDistance === Infinity) {
+            return null
+        }
+
+        return firstWall
     }
 }
 
 class Wall3d {
     constructor (underlyingWall) {
         this.underlyingWall = underlyingWall
+        this.startPoint = this.underlyingWall.startPoint
+        this.endPoint = this.underlyingWall.endPoint
     }
 
     distanceAlongRay(ray) {
@@ -172,35 +211,47 @@ class Wall3d {
 }
 
 class Sphere {
-    constructor (position, radius) {
-        this.position = position
+    constructor (positionVector, radius) {
+        this.positionVector = positionVector
         this.radius = radius
     }
 
     distanceAlongRay(ray3d) {
-        const translatedCentre = this.position.translate(ray3d.position.negate())
+        console.log("Calculating distance to sphere at", this.positionVector, "with r=", this.radius)
+        console.log("along a ray", ray3d)
+        const oMinusC = this.positionVector.translate(ray3d.startPoint.negate()).negate()
+        console.log("the negated translated centre of the sphere is", oMinusC)
         const rayUnit = ray3d.unitVector()
+        console.log("the unit vector for the ray is", rayUnit)
 
-        const directionDotCentre = rayUnit.dot(translatedCentre)
+        const directionDotCentre = rayUnit.dot(oMinusC)
+        console.log("direction dot centre is", directionDotCentre)
+        console.log("norm of translated centre is", oMinusC.length())
 
         // `delta` is a discriminant which tells you how many intersection points there are (0, 1, 2) indicated by
         // being negative/zero/positive
-        const delta = directionDotCentre * directionDotCentre - (translatedCentre.length() - this.radius * this.radius)
+        const delta = directionDotCentre * directionDotCentre - (oMinusC.length() - this.radius * this.radius)
+        console.log("delta is", delta)
 
         if (delta < 0) {
+            console.log("Returning infinity due to negative delta")
             return Infinity
         }
 
         const sqrtDelta = Math.sqrt(delta)
         
-        possibleDistances = [
+        const possibleDistancesUnfiltered = [
             -directionDotCentre + sqrtDelta,
             -directionDotCentre - sqrtDelta
-        ].filter(distance => distance >= 0)
+        ]
+        
+        const possibleDistances = possibleDistancesUnfiltered.filter(distance => distance >= 0)
 
         possibleDistances.sort()
 
         if (possibleDistances.length === 0) {
+            console.log(ray3d.startPoint, directionDotCentre, rayUnit, oMinusC, possibleDistancesUnfiltered)
+            console.log("Returning infinity due to no good candidates")
             return Infinity
         }
 
@@ -249,7 +300,7 @@ class Player {
     constructor (position) {
         this.position = position
         this.direction = 0
-        this.theta = 0
+        this.theta = Math.PI / 2
     }
 
     look(maze) {
@@ -257,12 +308,14 @@ class Player {
             wall.color = "black"
         }
 
-        const ray = new Ray(this.position, this.direction)
+        const ray = new Ray3d(this.position, this.direction, this.theta)
         const closestWall = ray.findFirstWall(maze.walls)
 
         if (closestWall) {
             closestWall.color = "blue"
         }
+
+        console.log("Distances are", maze.walls.map(shape => shape.distanceAlongRay(ray)))
     }
 
     rayTrace(maze, output, gains) {
@@ -307,7 +360,8 @@ class Maze {
 const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
-    new Wall3d(new Wall(new Point(10, 10), new Point(50, 10)))
+    new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
+    new Sphere(new Vector3d(400, 400, 0), 30)
 ])
 
 function renderMaze2D(ctx, maze, player) {
@@ -316,19 +370,29 @@ function renderMaze2D(ctx, maze, player) {
     // Render the player
     ctx.beginPath()
     ctx.strokeStyle = "red"
-    ctx.arc(...player.position, 20, player.direction - Math.PI / 2, player.direction + Math.PI / 2)
+    ctx.arc(player.position.x, player.position.y, 20, player.direction - Math.PI / 2, player.direction + Math.PI / 2)
     ctx.stroke()
 
     // Recolour the walls
     player.look(maze)
 
     // Render the walls
-    for (let wall of maze.walls) {
-        ctx.beginPath()
-        ctx.strokeStyle = wall.color
-        ctx.moveTo(...wall.startPoint)
-        ctx.lineTo(...wall.endPoint)
-        ctx.stroke()
+    // TODO: this logic should be part of each shape
+    for (let shape of maze.walls) {
+        if (shape instanceof Wall3d) {
+            ctx.beginPath()
+            ctx.strokeStyle = shape.color
+            ctx.moveTo(...shape.startPoint)
+            ctx.lineTo(...shape.endPoint)
+            ctx.stroke()
+        }
+
+        if (shape instanceof Sphere) {
+            ctx.beginPath()
+            ctx.strokeStyle = shape.color
+            ctx.arc(shape.positionVector.x, shape.positionVector.y, shape.radius, 0, 2 * Math.PI)
+            ctx.stroke()
+        }
     }
 }
 
@@ -339,7 +403,7 @@ window.addEventListener("load", () => {
     const outputCanvas = document.querySelector("#raytraced")
     const output = outputCanvas.getContext("2d")
 
-    const player = new Player(new Point(200, 200))
+    const player = new Player(new Vector3d(200, 200, 0))
 
     const audioContext = new AudioContext()
     const minFrequency = 100
@@ -379,13 +443,13 @@ window.addEventListener("load", () => {
                 player.direction += 0.1 
                 break;
             case "ArrowUp":
-                player.position = player.position.moveInDirection(5, player.direction)
+                player.position = player.position.moveInDirection(5, player.direction, player.theta)
                 break;
             case "ArrowDown":
-                player.position = player.position.moveInDirection(-5, player.direction)
+                player.position = player.position.moveInDirection(-5, player.direction, player.theta)
                 break;
         }
         renderMaze2D(topProjection, maze, player)
-        player.rayTrace(maze, output, gains)
+        //player.rayTrace(maze, output, gains)
     })
 })
