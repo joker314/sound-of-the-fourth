@@ -75,13 +75,24 @@ for (const point of points) {
 // // Example: Superposition of 300Hz, 400Hz, and 500Hz
 // createSuperposedSine([300, 400, 500]);
 
-let audioCtx;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+const gainNodes = Array(points.length);
+for (let i=0; i < points.length; i++) {
+    const point = points[i];
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0;
+    gainNode.connect(audioCtx.destination);
+    const freq = 100 + (10000-100) * i/points.length;
+    const oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = freq;
+    oscillator.connect(gainNode);
+    oscillator.start();
+    gainNodes[i] = gainNode;
+}
 
 function createSound({duration = 2} = {}) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.1; // Adjust overall volume
-    gainNode.connect(audioCtx.destination);
     
     // frequencies.forEach(freq => {
     //     const oscillator = audioCtx.createOscillator();
@@ -94,16 +105,8 @@ function createSound({duration = 2} = {}) {
 
     for (let i=0; i < points.length; i++) {
         const point = points[i];
-        const gainNode = audioCtx.createGain();
+        const gainNode = gainNodes[i];
         gainNode.gain.value = getAmplitude(point) * 0.1;
-        gainNode.connect(audioCtx.destination);
-        const freq = 100 + (10000-100) * i/points.length;
-        const oscillator = audioCtx.createOscillator();
-        oscillator.type = 'sine';
-        oscillator.frequency.value = freq;
-        oscillator.connect(gainNode);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + duration); 
     }
 }
 
