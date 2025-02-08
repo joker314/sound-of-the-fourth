@@ -1,3 +1,45 @@
+class Vector3d {
+    constructor (x, y, z) {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
+
+    [Symbol.iterator]() {
+        return [this.x, this.y, this.z][Symbol.iterator]()
+    }
+
+    length() {
+        return Math.sqrt([...this].map(u => u * u))
+    }
+
+    dot(otherVector) {
+        const [otherX, otherY, otherZ] = otherVector
+        return this.x * otherX + this.y * otherY + this.z * otherZ
+    }
+
+    translate(translationVector) {
+        const [deltaX, deltaY, deltaZ] = translationVector 
+        return new Vector3d(this.x + deltaX, this.y + deltaY, this.z + deltaZ)
+    }
+
+    scale(factor) {
+        return new Vector3d(...[...this].map(u => factor * u))
+    }
+
+    negate() {
+        return self.scale(-1)
+    }
+
+    static ofUnitDirection(theta, phi) {
+        return new Vector3d(
+            Math.sin(theta) * Math.cos(phi),
+            Math.sin(theta) * Math.sin(phi),
+            Math.cos(phi)
+        ) 
+    }
+}
+
 class Point {
     constructor (x, y) {
         this.x = x
@@ -104,6 +146,68 @@ class Wall {
     }
 }
 
+class Ray3d {
+    constructor (phi, theta) {
+        this.phi = phi
+        this.theta = theta
+    }
+
+    unitVector() {
+        return Vector3d.ofUnitDirection(this.phi, this.theta)
+    }
+}
+
+class Wall3d {
+    constructor (underlyingWall) {
+        this.underlyingWall = underlyingWall
+    }
+
+    distanceAlongRay(ray) {
+        const angle = ray.getPhi()
+        const ray2d = new Ray(ray.startPoint, angle)
+
+        // TODO: use ray.getTheta() to ensure walls aren't infinitely high 
+        return this.underlyingWall.distanceAlongRay(ray2d)
+    }
+}
+
+class Sphere {
+    constructor (position, radius) {
+        this.position = position
+        this.radius = radius
+    }
+
+    distanceAlongRay(ray3d) {
+        const translatedCentre = this.position.translate(ray3d.position.negate())
+        const rayUnit = ray3d.unitVector()
+
+        const directionDotCentre = rayUnit.dot(translatedCentre)
+
+        // `delta` is a discriminant which tells you how many intersection points there are (0, 1, 2) indicated by
+        // being negative/zero/positive
+        const delta = directionDotCentre * directionDotCentre - (translatedCentre.length() - this.radius * this.radius)
+
+        if (delta < 0) {
+            return Infinity
+        }
+
+        const sqrtDelta = Math.sqrt(delta)
+        
+        possibleDistances = [
+            -directionDotCentre + sqrtDelta,
+            -directionDotCentre - sqrtDelta
+        ].filter(distance => distance >= 0)
+
+        possibleDistances.sort()
+
+        if (possibleDistances.length === 0) {
+            return Infinity
+        }
+
+        return possibleDistances[0]
+    }
+}
+
 class Ray {
     constructor(startPoint, direction) {
         this.startPoint = startPoint
@@ -145,6 +249,7 @@ class Player {
     constructor (position) {
         this.position = position
         this.direction = 0
+        this.theta = 0
     }
 
     look(maze) {
@@ -200,9 +305,9 @@ class Maze {
 }
 
 const maze = new Maze([
-    new Wall(new Point(10, 10), new Point(10, 100)),
-    new Wall(new Point(50, 10), new Point(50, 100)),
-    new Wall(new Point(10, 10), new Point(50, 10))
+    new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
+    new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
+    new Wall3d(new Wall(new Point(10, 10), new Point(50, 10)))
 ])
 
 function renderMaze2D(ctx, maze, player) {
@@ -254,6 +359,7 @@ window.addEventListener("load", () => {
 
         oscillator.type = "sine"
         oscillator.frequency.value = Math.exp(Math.log(minFrequency) + i * (Math.log(maxFrequency) - Math.log(minFrequency)) / outputCanvas.width)
+//        oscillator.frequency.value = minFrequency + i * (maxFrequency - minFrequency) / outputCanvas.width
         oscillator.start()
 
         gains.push(gain)
