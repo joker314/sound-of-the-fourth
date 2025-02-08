@@ -160,7 +160,7 @@ class Player {
         }
     }
 
-    rayTrace(maze, output) {
+    rayTrace(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height)
         const fieldOfView = Math.PI / 2
         
@@ -182,8 +182,14 @@ class Player {
                 output.moveTo(i, centre - height / 2)
                 output.lineTo(i, centre + height / 2)
                 output.stroke()
+
+                gains[i].gain.value = height / output.canvas.height
+            } else {
+                gains[i].gain.value = 0
             }
         }
+
+        console.log(gains.map(gain => gain.gain.value))
     }
 }
 
@@ -235,21 +241,30 @@ window.addEventListener("load", () => {
     const maxFrequency = 10000
 
     const oscillators = []
+    const gains = []
 
     for (let i = 0; i < outputCanvas.width; i++) {
         const oscillator = audioContext.createOscillator()
-        oscillator.type = "sine"
-        oscillator.connect(audioContext.destination)
-        oscillator.frequency.value = minFrequency + i / (maxFrequency - minFrequency)
+        const gain = audioContext.createGain()
 
+        gain.connect(audioContext.destination)
+        oscillator.connect(gain)
+
+        gain.gain.value = 0
+
+        oscillator.type = "sine"
+        oscillator.frequency.value = Math.exp(Math.log(minFrequency) + i * (Math.log(maxFrequency) - Math.log(minFrequency)) / outputCanvas.width)
+        oscillator.start()
+
+        gains.push(gain)
         oscillators.push(oscillator)
     }
 
     renderMaze2D(topProjection, maze, player)
 
-    window.addEventListener("keydown", (e) => {
-        oscillators.forEach(oscillator => oscillator.start())
+    window.addEventListener("click", () => audioContext.resume())
 
+    window.addEventListener("keydown", (e) => {
         switch (e.code) {
             case "ArrowLeft":
                 player.direction -= 0.1 
@@ -265,6 +280,6 @@ window.addEventListener("load", () => {
                 break;
         }
         renderMaze2D(topProjection, maze, player)
-        player.rayTrace(maze, output)
+        player.rayTrace(maze, output, gains)
     })
 })
