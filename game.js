@@ -175,7 +175,7 @@ class Player {
 
             if (closestWall) {
                 const fisheyeHeight = 10000 / closestWall.distanceAlongRay(ray)
-                const height = fisheyeHeight * Math.cos(angleOffset)
+                const height = fisheyeHeight / Math.cos(angleOffset)
 
                 output.beginPath()
                 output.strokeStyle = "orange"
