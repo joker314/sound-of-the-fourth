@@ -164,7 +164,7 @@ class Player {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height)
         const fieldOfView = Math.PI / 2
         
-        const base = output.canvas.height - 20
+        const centre = (output.canvas.height - 20) / 2
         
         for (let i = 0; i < output.canvas.width; i++) {
             const angleOffset = -fieldOfView/2 + (i * fieldOfView / output.canvas.width)
@@ -179,8 +179,8 @@ class Player {
 
                 output.beginPath()
                 output.strokeStyle = "orange"
-                output.moveTo(i, base)
-                output.lineTo(i, base - height)
+                output.moveTo(i, centre - height / 2)
+                output.lineTo(i, centre + height / 2)
                 output.stroke()
             }
         }
