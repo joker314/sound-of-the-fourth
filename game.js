@@ -690,27 +690,51 @@ const decreaseRoll = Matrix.rollMatrix(-0.1)
 
 window.addEventListener("keydown", (e) => {
     switch (e.code) {
+        // Rotate left (yaw)
         case "ArrowLeft":
             player.updateBasisByMatrix(decreaseYaw)
             break;
+        // Rotate right (yaw)
         case "ArrowRight":
             player.updateBasisByMatrix(increaseYaw)
             break;
+        // Translate forward
         case "ArrowUp":
             player.position = player.position.add(player.forward.scale(5))
             break;
+        // Translate backward
         case "ArrowDown":
             player.position = player.position.add(player.forward.scale(-5))
             break;
+        // Translate right
+        case "KeyP":
+            player.position = player.position.add(player.right.scale(5))
+            break;
+        // Translate left
+        case "KeyO":
+            player.position = player.position.add(player.right.scale(-5))
+            break;
+        // Translate up
+        case "KeyI":
+            player.position = player.position.add(player.up.scale(5))
+            break;
+        // Translate down
+        case "KeyU":
+            player.position = player.position.add(player.up.scale(-5))
+            break;
+        // Rotate up (pitch) 
         case "KeyM":
             player.updateBasisByMatrix(decreasePitch)
             break;
+        // Rotate down (pitch)
         case "KeyN":
             player.updateBasisByMatrix(increasePitch)
             break;
+        // Rotate clockwise (roll)
         case "KeyB":
             player.updateBasisByMatrix(increaseRoll)
             break;
+        // Rotate anticlockwise (roll)
         case "KeyV":
             player.updateBasisByMatrix(decreaseRoll)
             break;
