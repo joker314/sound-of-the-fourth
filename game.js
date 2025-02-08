@@ -113,7 +113,7 @@ class Player {
         for (let wall of maze.walls) {
             const distance = wall.distanceAlongRay(ray)
 
-            if (distance < Infinity) {
+            if (distance < Infinity && distance > 0) {
                 console.log("Painting", wall, "blue")
                 wall.color = "blue"
             } else {
