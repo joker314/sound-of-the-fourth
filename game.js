@@ -318,33 +318,42 @@ class Player {
         console.log("Distances are", maze.walls.map(shape => shape.distanceAlongRay(ray)))
     }
 
-    rayTrace(maze, output, gains) {
+    rayTrace3d(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height)
+        
+        const verticalResolution = 50
+        output.beginPath()
+        output.rect(0, 0, 1, verticalResolution)
+        output.stroke()
+
         const fieldOfView = Math.PI / 2
         
-        const centre = (output.canvas.height - 20) / 2
-        
         for (let i = 0; i < output.canvas.width; i++) {
-            const angleOffset = -fieldOfView/2 + (i * fieldOfView / output.canvas.width)
-            const angle = this.direction + angleOffset
+                const phiOffset = -fieldOfView/2 + (i * fieldOfView / output.canvas.width)
+                const phi = this.direction + phiOffset
 
-            const ray = new Ray(this.position, angle)
-            const closestWall = ray.findFirstWall(maze.walls)
+                const theta = this.theta
 
-            if (closestWall) {
-                const fisheyeHeight = 10000 / closestWall.distanceAlongRay(ray)
-                const height = fisheyeHeight / Math.cos(angleOffset)
+                const ray = new Ray3d(this.position, phi, theta)
+                const closestWall = ray.findFirstWall(maze.walls)
 
-                output.beginPath()
-                output.strokeStyle = "orange"
-                output.moveTo(i, centre - height / 2)
-                output.lineTo(i, centre + height / 2)
-                output.stroke()
+                const centre = output.canvas.height / 2
 
-                gains[i].gain.value = height / output.canvas.height
-            } else {
-                gains[i].gain.value = 0
-            }
+                if (closestWall) {
+                    const distance = 10000 / (closestWall.distanceAlongRay(ray)) / output.canvas.height
+
+                    output.beginPath()
+                    output.strokeStyle = "purple"
+                    output.fillStyle = "orange"
+                    output.rect(i, centre - distance / 2, i+1, centre + distance / 2)
+                    output.fill()
+                    output.stroke()
+                    output.endPath()
+
+                    gains[i].gain.value = distance
+                } else {
+                    gains[i].gain.value = 0
+                }
         }
 
         console.log(gains.map(gain => gain.gain.value))
@@ -361,7 +370,7 @@ const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
     new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
-    new Sphere(new Vector3d(400, 400, 0), 40)
+    new Sphere(new Vector3d(400, 200, 0), 100)
 ])
 
 function renderMaze2D(ctx, maze, player) {
@@ -448,8 +457,14 @@ window.addEventListener("load", () => {
             case "ArrowDown":
                 player.position = player.position.moveInDirection(-5, player.direction, player.theta)
                 break;
+            case "KeyM":
+                player.theta += 0.1
+                break;
+            case "KeyN":
+                player.theta -= 0.1
+                break;
         }
         renderMaze2D(topProjection, maze, player)
-        //player.rayTrace(maze, output, gains)
+        player.rayTrace3d(maze, output, gains)
     })
 })
