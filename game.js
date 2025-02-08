@@ -1,3 +1,5 @@
+console.log = () => {}
+
 class Vector3d {
     constructor (x, y, z) {
         this.x = x
@@ -321,18 +323,21 @@ class Player {
     rayTrace3d(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height)
         
-        const verticalResolution = 50
+        const horizontalResolution = 20
+        const verticalResolution = 20
         output.beginPath()
         output.rect(0, 0, 1, verticalResolution)
         output.stroke()
 
         const fieldOfView = Math.PI / 2
         
-        for (let i = 0; i < output.canvas.width; i++) {
+        for (let i = 0; i < output.canvas.width; i += horizontalResolution) {
+            for (let j = 0; j < output.canvas.height; j += verticalResolution) {
                 const phiOffset = -fieldOfView/2 + (i * fieldOfView / output.canvas.width)
                 const phi = this.direction + phiOffset
 
-                const theta = this.theta
+                const thetaOffset = -fieldOfView/2 + (j * fieldOfView / output.canvas.height)
+                const theta = this.theta + thetaOffset
 
                 const ray = new Ray3d(this.position, phi, theta)
                 const closestWall = ray.findFirstWall(maze.walls)
@@ -340,18 +345,18 @@ class Player {
                 const centre = output.canvas.height / 2
 
                 if (closestWall) {
-                    const distance = Math.cos(phi) * 100000 / (closestWall.distanceAlongRay(ray))
+                    const distance = 100000 / (closestWall.distanceAlongRay(ray))
 
                     output.beginPath()
-                    output.strokeStyle = "purple"
-                    output.moveTo(i, centre - distance / 2)
-                    output.lineTo(i, centre + distance / 2)
-                    output.stroke()
+                    output.fillStyle = "purple"
+                    output.rect(i, j, horizontalResolution, verticalResolution)
+                    output.fill()
 
                     gains[i].gain.value = distance
                 } else {
                     gains[i].gain.value = 0
                 }
+            }
         }
 
         console.log(gains.map(gain => gain.gain.value))
