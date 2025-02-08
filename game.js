@@ -10,34 +10,77 @@ class Matrix {
         return new Matrix(this.rows.map(row => row.map(x => -x)))
     }
 
-    transform3DVector(vector) {
-        console.assert(this.rows[0].length === 3)
+    transform4DVector(vector) {
+        console.assert(this.rows[0].length === 4)
 
-        return new Vector3d(...this.rows.map(row => (new Vector3d(...row)).dot(vector)))
+        return new Vector4d(...this.rows.map(row => (new Vector4d(...row)).dot(vector)))
     }
 
     static pitchMatrix(angle) {
         return new Matrix([
-            [Math.cos(angle), 0, Math.sin(angle)],
-            [0, 1, 0],
-            [-Math.sin(angle), 0, Math.cos(angle)]
+            [Math.cos(angle), 0, Math.sin(angle), 0],
+            [0, 1, 0, 0],
+            [-Math.sin(angle), 0, Math.cos(angle), 0],
+            [0, 0, 0, 1]
         ])
     }
 
     static rollMatrix(angle) {
         return new Matrix([
-            [1, 0, 0],
-            [0, Math.cos(angle), -Math.sin(angle)],
-            [0, Math.sin(angle), Math.cos(angle)]
+            [1, 0, 0, 0],
+            [0, Math.cos(angle), -Math.sin(angle), 0],
+            [0, Math.sin(angle), Math.cos(angle), 0],
+            [0, 0, 0, 1]
         ])
     }
 
     static yawMatrix(angle) {
         return new Matrix([
-            [Math.cos(angle), -Math.sin(angle), 0],
-            [Math.sin(angle), Math.cos(angle), 0],
-            [0, 0, 1]
+            [Math.cos(angle), -Math.sin(angle), 0, 0],
+            [Math.sin(angle), Math.cos(angle), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
         ])
+    }
+}
+
+class Vector4d {
+    constructor (x, y, z, w) {
+        this.x = x
+        this.y = y
+        this.z = z
+        this.w = w
+    }
+
+    [Symbol.iterator]() {
+        return [this.x, this.y, this.z, this.w][Symbol.iterator]();
+    }
+
+    length() {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+    }
+
+    dot(otherVector) {
+        const [otherX, otherY, otherZ, otherW] = otherVector;
+        return this.x * otherX + this.y * otherY + this.z * otherZ + this.w * otherW;
+    }
+
+    add(other) {
+        return new Vector4d(this.x + other.x, this.y + other.y, this.z + other.z, this.w + other.w);
+    }
+
+    normalize() {
+        const len = this.length();
+        if (len === 0) return new Vector4d(0, 0, 0, 0);
+        return new Vector4d(this.x / len, this.y / len, this.z / len, this.w / len);
+    }
+
+    scale(factor) {
+        return new Vector4d(this.x * factor, this.y * factor, this.z * factor, this.w * factor);
+    }
+
+    negate() {
+        return this.scale(-1);
     }
 }
 
@@ -216,7 +259,7 @@ class Wall {
     }
 }
 
-class Ray3d {
+class Ray4d {
     constructor (positionVector, unitVector) {
         this.positionVector = positionVector
         this.unitVector = unitVector
@@ -274,12 +317,12 @@ class Sphere {
         this.radius = radius
     }
 
-    distanceAlongRay(ray3d) {
+    distanceAlongRay(ray4d) {
         // console.log("Calculating distance to sphere at", this.positionVector, "with r=", this.radius)
         // console.log("along a ray", ray3d)
-        const oMinusC = this.positionVector.translate(ray3d.positionVector.negate()).negate()
+        const oMinusC = this.positionVector.add(ray4d.positionVector.negate()).negate()
         // console.log("the negated translated centre of the sphere is", oMinusC)
-        const rayUnit = ray3d.unitVector
+        const rayUnit = ray4d.unitVector
         // console.log("the unit vector for the ray is", rayUnit)
 
         const directionDotCentre = rayUnit.dot(oMinusC)
@@ -325,7 +368,7 @@ class Ray {
     }
 
     translate(offset) {
-        return new Ray(this.startPoint.translate(offset), this.direction)
+        return new Ray(this.startPoint.add(offset), this.direction)
     }
 
     findFirstWall(walls) {
@@ -359,15 +402,17 @@ class Player {
         this.position = position
         
         // Any orthonormal basis
-        this.forward = new Vector3d(1, 0, 0)
-        this.right = new Vector3d(0, 1, 0)
-        this.up = new Vector3d(0, 0, 1)
+        this.forward = new Vector4d(1, 0, 0, 0)
+        this.right = new Vector4d(0, 1, 0, 0)
+        this.up = new Vector4d(0, 0, 1, 0)
+        this.ana = new Vector4d(0, 0, 0, 1)
     }
 
     updateBasisByMatrix(matrix) {
-        this.forward = matrix.transform3DVector(this.forward)
-        this.right = matrix.transform3DVector(this.right)
-        this.up = matrix.transform3DVector(this.up)
+        this.forward = matrix.transform4DVector(this.forward)
+        this.right = matrix.transform4DVector(this.right)
+        this.up = matrix.transform4DVector(this.up)
+        this.ana = matrix.transform4DVector(this.ana)
     }
 
     look(maze) {
@@ -375,7 +420,7 @@ class Player {
             wall.color = "black"
         }
 
-        const ray = new Ray3d(this.position, this.forward)
+        const ray = new Ray4d(this.position, this.forward)
         const closestWall = ray.findFirstWall(maze.walls)
 
         if (closestWall) {
@@ -385,7 +430,7 @@ class Player {
         // console.log("Distances are", maze.walls.map(shape => shape.distanceAlongRay(ray)))
     }
 
-    rayTrace3d(maze, output, gains) {
+    rayTrace4d(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height);
     
         // Use a finer resolution
@@ -400,7 +445,6 @@ class Player {
         const halfWidth = aspect * halfHeight;
     
         // Compute camera basis vectors
-        const worldUp = new Vector3d(0, 0, 1);
         // let right = forward.cross(worldUp).normalize();
         // if (right.length() === 0) {
         //     right = new Vector3d(1, 0, 0);
@@ -428,7 +472,7 @@ class Player {
                     .add(this.up.scale(vScaled))
                     .normalize();
     
-                const ray = new Ray3d(this.position, rayDir);
+                const ray = new Ray4d(this.position, rayDir);
                 const closestWall = ray.findFirstWall(maze.walls);
     
                 if (closestWall) {
@@ -458,13 +502,13 @@ const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
     new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
-    new Sphere(new Vector3d(400, 100, 0), 50),
-    new Sphere(new Vector3d(400, 300, 0), 80),
+    new Sphere(new Vector4d(400, 100, 0, 0), 50),
+    new Sphere(new Vector4d(400, 300, 0, 0), 80),
 ])
 
 function renderMaze2D(ctx, maze, player) {
-    const mapUp = new Vector3d(0, 1, 0)
-    const mapRight = new Vector3d(1, 0, 0)
+    const mapUp = new Vector4d(0, 1, 0, 0)
+    const mapRight = new Vector4d(1, 0, 0, 0)
 
     const phi = Math.atan2(player.forward.dot(mapUp), player.forward.dot(mapRight))
 
@@ -507,7 +551,7 @@ const topProjection = topProjectionCanvas.getContext("2d")
 const outputCanvas = document.querySelector("#raytraced")
 const output = outputCanvas.getContext("2d")
 
-const player = new Player(new Vector3d(200, 200, 0))
+const player = new Player(new Vector4d(200, 200, 0, 0))
 
 const audioContext = new AudioContext()
 const minFrequency = 100
@@ -598,5 +642,5 @@ window.addEventListener("keydown", (e) => {
             break;
     }
     renderMaze2D(topProjection, maze, player)
-    player.rayTrace3d(maze, output, gains)
+    player.rayTrace4d(maze, output, gains)
 })
