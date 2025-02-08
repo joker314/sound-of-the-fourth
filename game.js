@@ -99,6 +99,31 @@ class Ray {
     translate(offset) {
         return new Ray(this.startPoint.translate(offset), this.direction)
     }
+
+    findFirstWall(walls) {
+        const firstWall = walls.toSorted((a, b) => {
+            const aDistance = a.distanceAlongRay(this)
+            const bDistance = b.distanceAlongRay(this)
+
+            if (aDistance < 0 || aDistance === Infinity) {
+                return 1
+            }
+
+            if (bDistance < 0 || bDistance === Infinity) {
+                return -1
+            }
+
+            return aDistance - bDistance 
+        })[0]
+
+        const firstWallDistance = firstWall.distanceAlongRay(this)
+
+        if (firstWallDistance < 0 || firstWallDistance === Infinity) {
+            return null
+        }
+
+        return firstWall
+    }
 }
 
 class Player {
@@ -108,18 +133,15 @@ class Player {
     }
 
     look(maze) {
-        const ray = new Ray(this.position, this.direction)
-
         for (let wall of maze.walls) {
-            const distance = wall.distanceAlongRay(ray)
+            wall.color = "black"
+        }
 
-            if (distance < Infinity && distance > 0) {
-                console.log("Painting", wall, "blue")
-                wall.color = "blue"
-            } else {
-                console.log("Painting", wall, "black", distance)
-                wall.color = "black"
-            }
+        const ray = new Ray(this.position, this.direction)
+        const closestWall = ray.findFirstWall(maze.walls)
+
+        if (closestWall) {
+            closestWall.color = "blue"
         }
     }
 }
