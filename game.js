@@ -59,6 +59,7 @@ class Wall {
 
         let xCoordOfIntersection = null
         let yCoordOfIntersection = null
+        let sign = null
 
         if (Math.abs(tWall.gradient()) !== Infinity) {
             xCoordOfIntersection = tWall.xIntercept() / (tRay.gradient - tWall.gradient())
@@ -85,7 +86,17 @@ class Wall {
             }
         }
 
-        return Math.sqrt(xCoordOfIntersection * xCoordOfIntersection + yCoordOfIntersection * yCoordOfIntersection)
+        const intersectionPointAngle = Math.atan2(yCoordOfIntersection, xCoordOfIntersection)
+        const angleDifference = Math.abs(intersectionPointAngle - tRay.direction)
+
+        const epsilon = 0.2 
+        if ((angleDifference + epsilon) % (2 * Math.PI) <= 3 * epsilon) {
+            sign = 1 
+        } else {
+            sign = -1
+        }
+
+        return sign * Math.sqrt(xCoordOfIntersection * xCoordOfIntersection + yCoordOfIntersection * yCoordOfIntersection)
     }
 }
 
