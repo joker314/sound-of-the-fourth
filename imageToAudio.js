@@ -16,6 +16,28 @@ const hilbertCurve = (order, x0 = 0, y0 = 0, xi = 1, xj = 0, yi = 0, yj = 1, poi
 }
 
 
+const zOrderCurve = (order, x0 = 0, y0 = 0, size = 1, points = []) => {
+    if (order === 0) {
+      // For a cell of side length `size`, the center is at (x0 + size/2, y0 + size/2)
+      const x = x0 + size / 2;
+      const y = y0 + size / 2;
+      points.push([x, y]);
+    } else {
+      const half = size / 2;
+      // Visit the four quadrants in Z-order:
+      // 1. Bottom-left quadrant
+      zOrderCurve(order - 1, x0, y0, half, points);
+      // 2. Bottom-right quadrant
+      zOrderCurve(order - 1, x0 + half, y0, half, points);
+      // 3. Top-left quadrant
+      zOrderCurve(order - 1, x0, y0 + half, half, points);
+      // 4. Top-right quadrant
+      zOrderCurve(order - 1, x0 + half, y0 + half, half, points);
+    }
+    return points;
+  }
+  
+
 const srcCanvas = document.createElement('canvas');
 const w = 200;
 const h = 200;
@@ -25,7 +47,8 @@ const srcCtx = srcCanvas.getContext('2d');
 document.body.append(srcCanvas);
 
 
-const points = hilbertCurve(5);
+// const points = hilbertCurve(5);
+const points = zOrderCurve(5);
 
 srcCtx.beginPath();
 srcCtx.moveTo(points[0] * w, points[1] * h);
@@ -55,7 +78,7 @@ for (const point of points) {
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const minFreq = 100;
-const maxFreq = 10000;
+const maxFreq = 3000;
 
 const gainNodes = Array(points.length);
 for (let i=0; i < points.length; i++) {
