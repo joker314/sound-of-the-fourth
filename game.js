@@ -57,18 +57,33 @@ class Wall {
         const tRay = ray.translate(offset)
         const tWall = this.translate(offset)
 
-        const xCoordOfIntersection = tWall.xIntercept() / (tRay.gradient - tWall.gradient())
-        console.log(tWall.xIntercept(), tRay.gradient, tWall.gradient())
+        let xCoordOfIntersection = null
+        let yCoordOfIntersection = null
 
-        if (xCoordOfIntersection < Math.min(tWall.startPoint.x, tWall.endPoint.x)) {
-            return Infinity
+        if (Math.abs(tWall.gradient()) !== Infinity) {
+            xCoordOfIntersection = tWall.xIntercept() / (tRay.gradient - tWall.gradient())
+
+            if (xCoordOfIntersection < Math.min(tWall.startPoint.x, tWall.endPoint.x)) {
+                return Infinity
+            }
+
+            if (xCoordOfIntersection > Math.max(tWall.startPoint.x, tWall.endPoint.x)) {
+                return Infinity
+            }
+
+            yCoordOfIntersection = tRay.gradient * xCoordOfIntersection
+        } else {
+            xCoordOfIntersection = tWall.startPoint.x 
+            yCoordOfIntersection = tRay.gradient * xCoordOfIntersection
+
+            if (yCoordOfIntersection < Math.min(tWall.startPoint.y, tWall.endPoint.y)) {
+                return Infinity
+            }
+
+            if (yCoordOfIntersection > Math.max(tWall.startPoint.y, tWall.endPoint.y)) {
+                return Infinity
+            }
         }
-
-        if (xCoordOfIntersection > Math.max(tWall.startPoint.x, tWall.endPoint.x)) {
-            return Infinity
-        }
-
-        const yCoordOfIntersection = tRay.gradient * xCoordOfIntersection
 
         return Math.sqrt(xCoordOfIntersection * xCoordOfIntersection + yCoordOfIntersection * yCoordOfIntersection)
     }
@@ -116,8 +131,9 @@ class Maze {
 }
 
 const maze = new Maze([
-    new Wall(new Point(10, 10), new Point(20, 100)),
-    new Wall(new Point(50, 10), new Point(70, 100))
+    new Wall(new Point(10, 10), new Point(10, 100)),
+    new Wall(new Point(50, 10), new Point(50, 100)),
+    new Wall(new Point(10, 10), new Point(50, 10))
 ])
 
 function renderMaze2D(ctx, maze, player) {
