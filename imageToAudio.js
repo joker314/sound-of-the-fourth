@@ -36,6 +36,35 @@ const zOrderCurve = (order, x0 = 0, y0 = 0, size = 1, points = []) => {
     }
     return points;
   }
+
+
+  const zOrderCurveND = (dimensions, order, origin = undefined, size = 1, points = []) => {
+    if (origin === undefined) {
+        origin = Array(dimensions).fill(0);
+    }
+    if (order === 0) {
+        // Compute center of the current hypercube
+        const center = origin.map(coord => coord + size / 2);
+        points.push(center);
+    } else {
+        const half = size / 2;
+        const numSubcubes = 2 ** dimensions;
+        
+        for (let i = 0; i < numSubcubes; i++) {
+            // Determine offsets for each dimension
+            const offsets = Array.from({ length: dimensions }, (_, d) =>
+                (i >> d) & 1 ? half : 0
+            );
+            
+            // Compute new origin for the subcube
+            const newOrigin = origin.map((coord, d) => coord + offsets[d]);
+            
+            // Recursively subdivide
+            zOrderCurveND(dimensions, order - 1, newOrigin, half, points);
+        }
+    }
+    return points;
+};
   
 
 const srcCanvas = document.createElement('canvas');
@@ -48,7 +77,8 @@ document.body.append(srcCanvas);
 
 
 // const points = hilbertCurve(5);
-const points = zOrderCurve(5);
+// const points = zOrderCurve(2)
+const points = zOrderCurveND(2, 5);
 
 srcCtx.beginPath();
 srcCtx.moveTo(points[0] * w, points[1] * h);
