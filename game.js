@@ -223,18 +223,13 @@ class Wall {
 }
 
 class Ray3d {
-    constructor (startPoint, phi, theta) {
-        this.startPoint = startPoint
-        this.phi = phi
-        this.theta = theta
-    }
-
-    unitVector() {
-        return Vector3d.ofUnitDirection(this.theta, this.phi)
+    constructor (positionVector, unitVector) {
+        this.positionVector = positionVector
+        this.unitVector = unitVector
     }
 
     getPhi() {
-        return this.phi
+        return Math.atan2(this.unitVector.y, this.unitVector.x)
     }
 
     findFirstWall(walls) {
@@ -272,7 +267,7 @@ class Wall3d {
 
     distanceAlongRay(ray) {
         const angle = ray.getPhi()
-        const ray2d = new Ray(ray.startPoint, angle)
+        const ray2d = new Ray(ray.positionVector, angle)
 
         // TODO: use ray.getTheta() to ensure walls aren't infinitely high 
         return this.underlyingWall.distanceAlongRay(ray2d)
@@ -288,9 +283,9 @@ class Sphere {
     distanceAlongRay(ray3d) {
         // console.log("Calculating distance to sphere at", this.positionVector, "with r=", this.radius)
         // console.log("along a ray", ray3d)
-        const oMinusC = this.positionVector.translate(ray3d.startPoint.negate()).negate()
+        const oMinusC = this.positionVector.translate(ray3d.positionVector.negate()).negate()
         // console.log("the negated translated centre of the sphere is", oMinusC)
-        const rayUnit = ray3d.unitVector()
+        const rayUnit = ray3d.unitVector
         // console.log("the unit vector for the ray is", rayUnit)
 
         const directionDotCentre = rayUnit.dot(oMinusC)
@@ -471,7 +466,7 @@ class Player {
             wall.color = "black"
         }
 
-        const ray = new Ray3d(this.position, this.direction, this.theta)
+        const ray = new Ray3d(this.position, Vector3d.ofUnitDirection(this.direction, this.theta))
         const closestWall = ray.findFirstWall(maze.walls)
 
         if (closestWall) {
@@ -528,11 +523,7 @@ class Player {
                     .add(up.scale(vScaled))
                     .normalize();
     
-                // Convert the ray direction back into spherical angles
-                const newTheta = Math.acos(rayDir.z);
-                const newPhi = Math.atan2(rayDir.y, rayDir.x);
-    
-                const ray = new Ray3d(this.position, newPhi, newTheta);
+                const ray = new Ray3d(this.position, rayDir);
                 const closestWall = ray.findFirstWall(maze.walls);
     
                 if (closestWall) {
