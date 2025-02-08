@@ -230,7 +230,7 @@ class Sphere {
 
         // `delta` is a discriminant which tells you how many intersection points there are (0, 1, 2) indicated by
         // being negative/zero/positive
-        const delta = directionDotCentre * directionDotCentre - (oMinusC.length() - this.radius * this.radius)
+        const delta = directionDotCentre * directionDotCentre - (oMinusC.length() * oMinusC.length() - this.radius * this.radius)
         console.log("delta is", delta)
 
         if (delta < 0) {
@@ -361,7 +361,7 @@ const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
     new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
-    new Sphere(new Vector3d(400, 400, 0), 30)
+    new Sphere(new Vector3d(400, 400, 0), 40)
 ])
 
 function renderMaze2D(ctx, maze, player) {
