@@ -59,7 +59,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const minFreq = 100;
 const maxFreq = 3000;
 
-const gainNodes = setUpGainNodes(minFreq, maxFreq, points.length)
+const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, points.length)
 
 const render = () => {
     updateSound(gainNodes, points, getAmplitude);

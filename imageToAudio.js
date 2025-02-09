@@ -66,7 +66,7 @@ const zOrderCurve = (order, x0 = 0, y0 = 0, size = 1, points = []) => {
     return points;
 };
 
-const setUpGainNodes = (minFreq, maxFreq, numberOfPoints) => Array(numberOfPoints).fill().map((_, i) => {
+const setUpGainNodes = (audioCtx, minFreq, maxFreq, numberOfPoints) => Array(numberOfPoints).fill().map((_, i) => {
     const gainNode = audioCtx.createGain();
     gainNode.gain.value = 0;
     gainNode.connect(audioCtx.destination);
