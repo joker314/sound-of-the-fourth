@@ -906,6 +906,7 @@ table["Space"] = (e) => {
         document.querySelector("#screen-is-on").style.display = "none"
         document.querySelectorAll("canvas").forEach(canvas => canvas.style.display = "none")
         document.querySelector("#you-win").style.display = "block"
+        document.querySelector("#you-win-extra-text").textContent = "with a score of " + player.score
         document.querySelector("#hint").style.display = "none"
     }
 }
