@@ -954,7 +954,18 @@ const screenOffPoints = -1
 const screenOnPoints = -10
 
 let lastTimeWithScreenOn = Infinity 
-let isScreenOn = false 
+let isScreenOn = true 
+
+document.querySelectorAll("canvas").forEach(canvas => {
+    canvas.style.display = isScreenOn ? "inline" : "none"
+})
+
+if (!isScreenOn) {
+    lastTimeWithScreenOn = performance.now()
+}
+
+document.querySelector("#screen-is-on").style.display = isScreenOn ? "block" : "none"
+document.querySelector("#screen-is-off").style.display = !isScreenOn ? "block" : "none"
 
 function refreshTimeBasedScore() {
     player.score += performance.now() - lastTimeWithScreenOn >= 1 ? screenOffPoints : screenOnPoints
