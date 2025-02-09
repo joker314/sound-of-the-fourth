@@ -1,114 +1,125 @@
 // console.log = () => {}
 
 class Matrix {
-    constructor (rows) {
-        this.rows = rows
-        console.assert(rows.every(row => row.length === rows[0].length))
+    constructor (rowVectors) {
+        this.rowVectors = rowVectors
+        console.assert(rowVectors.every(row => row.length === rowVectors[0].length))
     }
 
     negate () {
-        return new Matrix(this.rows.map(row => row.map(x => -x)))
+        return new Matrix(this.rowVectors.map(row => row.negate()))
     }
 
-    transform4DVector(vector) {
-        console.assert(this.rows[0].length === 4)
+    transformHighDimensionalVector(vector) {
+        console.assert(this.rowVectors[0].length === vector.length)
 
-        return new Vector4d(...this.rows.map(row => (new Vector4d(...row)).dot(vector)))
+        return new HighDimensionalVector(this.rowVectors.map(row => row.dot(vector)))
+    }
+
+    static identityMatrix(dimension) {
+        return new Matrix(
+            Array(dimension).fill().map((_, i) => HighDimensionalVector.nthBasisVector(i, dimension))
+        )
+    }
+
+    /**
+     * Given exactly two of the dimensions, gives you a rotation matrix that only affects vectors with components
+     * in those two directions. For example, if you pick the "up" and "right" dimensions then you will get roll (since
+     * roll does not affect "forward")
+     */
+    static planarRotationMatrix(i, j, dimension, angle) {
+        const [c, s] = [Math.cos(angle), Math.sin(angle)] 
+        
+        const matrix = Matrix.identityMatrix(dimension)
+        matrix.rowVectors[i].components[i] = c
+        matrix.rowVectors[i].components[j] = -s
+        matrix.rowVectors[j].components[j] = c
+        matrix.rowVectors[j].components[i] = s
+
+        return matrix
     }
 
     static pitchMatrix(angle) {
-        return new Matrix([
-            [Math.cos(angle), 0, Math.sin(angle), 0],
-            [0, 1, 0, 0],
-            [-Math.sin(angle), 0, Math.cos(angle), 0],
-            [0, 0, 0, 1]
-        ])
+        return Matrix.planarRotationMatrix(0, 2, 4, -angle)
     }
 
     static rollMatrix(angle) {
-        return new Matrix([
-            [1, 0, 0, 0],
-            [0, Math.cos(angle), -Math.sin(angle), 0],
-            [0, Math.sin(angle), Math.cos(angle), 0],
-            [0, 0, 0, 1]
-        ])
+        return Matrix.planarRotationMatrix(1, 2, 4, angle)
     }
 
     static yawMatrix(angle) {
-        return new Matrix([
-            [Math.cos(angle), -Math.sin(angle), 0, 0],
-            [Math.sin(angle), Math.cos(angle), 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
-        ])
+        return Matrix.planarRotationMatrix(0, 1, 4, angle)
     }
 
     static AMatrix(angle) {
-        return new Matrix([
-            [Math.cos(angle), 0, 0, -Math.sin(angle)],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [Math.sin(angle), 0, 0, Math.cos(angle)]
-        ])
+        return Matrix.planarRotationMatrix(0, 3, 4, angle)
     }
 
     static BMatrix(angle) {
-        return new Matrix([
-            [1, 0, 0, 0],
-            [0, Math.cos(angle), 0, -Math.sin(angle)],
-            [0, 0, 1, 0],
-            [0, Math.sin(angle), 0, Math.cos(angle)]
-        ])
+        return Matrix.planarRotationMatrix(1, 3, 4, angle)
     }
 
     static CMatrix(angle) {
-        return new Matrix([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, Math.cos(angle), -Math.sin(angle)],
-            [0, 0, Math.sin(angle), Math.cos(angle)]
-        ])
+        return Matrix.planarRotationMatrix(2, 3, 4, angle)
     }
 }
 
-class Vector4d {
-    constructor (x, y, z, w) {
-        this.x = x
-        this.y = y
-        this.z = z
-        this.w = w
+class HighDimensionalVector {
+    constructor (components) {
+        this.components = components
+    }
+
+    /**
+     * Returns a unit vector with exactly one component equal to 1, like this: [0, 0, 1, 0, 0, 0, 0]
+     * 
+     * @param {number} n 
+     * @param {number} dimension 
+     * @returns 
+     */
+    static nthBasisVector(n, dimension) {
+        const components = Array(dimension).fill(0)
+        components[n] = 1
+
+        return new HighDimensionalVector(components)
     }
 
     [Symbol.iterator]() {
-        return [this.x, this.y, this.z, this.w][Symbol.iterator]();
+        return this.components[Symbol.iterator]();
     }
 
-    length() {
-        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+    norm() {
+        return Math.sqrt(this.components.reduce((acc, v) => acc + v * v, 0));
     }
 
     dot(otherVector) {
-        const [otherX, otherY, otherZ, otherW] = otherVector;
-        return this.x * otherX + this.y * otherY + this.z * otherZ + this.w * otherW;
+        return this.components.reduce((acc, v, i) => acc + v * otherVector.components[i], 0)
     }
 
-    add(other) {
-        return new Vector4d(this.x + other.x, this.y + other.y, this.z + other.z, this.w + other.w);
+    add(otherVector) {
+        return new HighDimensionalVector(this.components.map((v, i) => v + otherVector.components[i]));
     }
 
     normalize() {
-        const len = this.length();
-        if (len === 0) return new Vector4d(0, 0, 0, 0);
-        return new Vector4d(this.x / len, this.y / len, this.z / len, this.w / len);
+        const norm = this.norm();
+        if (norm === 0) {
+            return this
+        }
+
+        return new HighDimensionalVector(this.components.map(v => v / norm))
     }
 
     scale(factor) {
-        return new Vector4d(this.x * factor, this.y * factor, this.z * factor, this.w * factor);
+        return new HighDimensionalVector(this.components.map(v => v * factor)) 
     }
 
     negate() {
         return this.scale(-1);
     }
+
+    get x() { return this.components[0] }
+    get y() { return this.components[1] }
+    get z() { return this.components[2] }
+    get w() { return this.components[3] }
 }
 
 class Vector3d {
@@ -286,12 +297,13 @@ class Wall {
     }
 }
 
-class Ray4d {
+class HighDimensionalRay {
     constructor (positionVector, unitVector) {
         this.positionVector = positionVector
         this.unitVector = unitVector
     }
 
+    // Leaving this here for now just to help draw the "from above" projection in the first canvas
     getPhi() {
         return Math.atan2(this.unitVector.y, this.unitVector.x)
     }
@@ -344,22 +356,15 @@ class Sphere {
         this.radius = radius
     }
 
-    distanceAlongRay(ray4d) {
-        // console.log("Calculating distance to sphere at", this.positionVector, "with r=", this.radius)
-        // console.log("along a ray", ray3d)
-        const oMinusC = this.positionVector.add(ray4d.positionVector.negate()).negate()
-        // console.log("the negated translated centre of the sphere is", oMinusC)
-        const rayUnit = ray4d.unitVector
-        // console.log("the unit vector for the ray is", rayUnit)
+    distanceAlongRay(highDimensionalRay) {
+        const oMinusC = this.positionVector.add(highDimensionalRay.positionVector.negate()).negate()
+        const rayUnit = highDimensionalRay.unitVector
 
         const directionDotCentre = rayUnit.dot(oMinusC)
-        // console.log("direction dot centre is", directionDotCentre)
-        // console.log("norm of translated centre is", oMinusC.length())
 
         // `delta` is a discriminant which tells you how many intersection points there are (0, 1, 2) indicated by
         // being negative/zero/positive
-        const delta = directionDotCentre ** 2 - (oMinusC.length() ** 2 - this.radius ** 2)
-        // console.log("delta is", delta)
+        const delta = directionDotCentre ** 2 - (oMinusC.norm() ** 2 - this.radius ** 2)
 
         if (delta < 0) {
             // console.log("Returning infinity due to negative delta")
@@ -378,7 +383,6 @@ class Sphere {
         possibleDistances.sort((a, b) => a - b)
 
         if (possibleDistances.length === 0) {
-            // console.log(ray3d.startPoint, directionDotCentre, rayUnit, oMinusC, possibleDistancesUnfiltered)
             // console.log("Returning infinity due to no good candidates")
             return Infinity
         }
@@ -425,21 +429,35 @@ class Ray {
 }
 
 class Player {
-    constructor (position) {
+    constructor (position, dimension) {
         this.position = position
+
+        if (dimension < 3) {
+            throw new Error("Need at least 3D to have a 'forward', 'right', and 'up' vector for the 2D raytracing")
+        }
         
-        // Any orthonormal basis
-        this.forward = new Vector4d(1, 0, 0, 0)
-        this.right = new Vector4d(0, 1, 0, 0)
-        this.up = new Vector4d(0, 0, 1, 0)
-        this.ana = new Vector4d(0, 0, 0, 1)
+        // Pick an arbitrary orthonormal basis
+        this.basis = Array(dimension).fill().map((_, i) => HighDimensionalVector.nthBasisVector(i, dimension))
+    }
+
+    get forward() {
+        return this.basis[0]
+    }
+
+    get right() {
+        return this.basis[1]
+    }
+
+    get up() {
+        return this.basis[2]
+    }
+
+    get ana() {
+        return this.basis[3]
     }
 
     updateBasisByMatrix(matrix) {
-        this.forward = matrix.transform4DVector(this.forward)
-        this.right = matrix.transform4DVector(this.right)
-        this.up = matrix.transform4DVector(this.up)
-        this.ana = matrix.transform4DVector(this.ana)
+        this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
     }
 
     look(maze) {
@@ -447,7 +465,7 @@ class Player {
             wall.color = "black"
         }
 
-        const ray = new Ray4d(this.position, this.forward)
+        const ray = new HighDimensionalRay(this.position, this.forward)
         const closestWall = ray.findFirstWall(maze.walls)
 
         if (closestWall) {
@@ -499,7 +517,7 @@ class Player {
                     .add(this.up.scale(vScaled))
                     .normalize();
     
-                const ray = new Ray4d(this.position, rayDir);
+                const ray = new HighDimensionalRay(this.position, rayDir);
                 const closestWall = ray.findFirstWall(maze.walls);
     
                 if (closestWall) {
@@ -529,17 +547,17 @@ const maze = new Maze([
     new Wall3d(new Wall(new Point(10, 10), new Point(10, 100))),
     new Wall3d(new Wall(new Point(50, 10), new Point(50, 100))),
     new Wall3d(new Wall(new Point(10, 10), new Point(50, 10))),
-    new Sphere(new Vector4d(400, 100, 0, 0), 50),
-    new Sphere(new Vector4d(400, 300, 0, 0), 80),
+    new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
+    new Sphere(new HighDimensionalVector([400, 300, 0, 0]), 80),
 ])
 
 function renderMaze2D(ctx, maze, player) {
-    const mapUp = new Vector4d(0, 1, 0, 0)
-    const mapRight = new Vector4d(1, 0, 0, 0)
+    const mapUp = HighDimensionalVector.nthBasisVector(1, 4)
+    const mapRight = HighDimensionalVector.nthBasisVector(0, 4)
 
     const phi = Math.atan2(player.forward.dot(mapUp), player.forward.dot(mapRight))
 
-    console.log("components", player.forward, player.forward.dot(mapUp), player.forward.dot(mapRight))
+    // console.log("components", ...player.forward.components, "/", ...mapUp.components, "/", ...mapRight.components, "/", player.forward.dot(mapUp), player.forward.dot(mapRight))
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
@@ -578,7 +596,7 @@ const topProjection = topProjectionCanvas.getContext("2d")
 const outputCanvas = document.querySelector("#raytraced")
 const output = outputCanvas.getContext("2d")
 
-const player = new Player(new Vector4d(200, 200, 0, 0))
+const player = new Player(new HighDimensionalVector([200, 200, 0, 0]), 4)
 
 const audioContext = new AudioContext()
 const minFrequency = 100
