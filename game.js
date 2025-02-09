@@ -141,6 +141,10 @@ class Sphere {
         this.radius = radius
     }
 
+    containsPoint(positionVector) {
+        return positionVector.add(this.positionVector.negate()).norm() <= this.radius
+    }
+
     render2D (ctx) {
         ctx.beginPath()
         ctx.strokeStyle = this.color
@@ -353,6 +357,20 @@ class Maze {
     constructor (shapes) {
         this.shapes = shapes 
     }
+
+    // TODO: see `imageToAudioDemo.js`, see if we can generalise the smooth-but-sharp falling off so it works for both
+    // spheres and hypercubes?
+    amplitudeAt (positionVector) {
+        let totalContribution = 0
+
+        for (let shape of this.shapes) {
+            if (shape.containsPoint(positionVector)) {
+                totalContribution += 1
+            }
+        }
+
+        return totalContribution
+    }
 }
 
 const maze = new Maze([
@@ -493,6 +511,14 @@ const table = createKeyBindingTable(
     player
 )
 
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+const minFreq = 100
+const maxFreq = 3000
+
+const pointsForSoundSampling = zOrderCurveND(3, 3).map(point => new HighDimensionalVector(point));
+const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, pointsForSoundSampling.length)
+
 window.addEventListener("keydown", (e) => {
     if (table[e.code]) {
         table[e.code]()
@@ -500,4 +526,7 @@ window.addEventListener("keydown", (e) => {
 
     renderMaze2D(topProjection, maze, player)
     player.rayTrace(maze, output, gains)
+
+    updateSound(gainNodes, pointsForSoundSampling, point => maze.amplitudeAt(point.add(player.position)))
+    audioCtx.resume()
 })
