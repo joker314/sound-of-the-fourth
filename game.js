@@ -1,5 +1,7 @@
 // console.log = () => {}
 
+const dimensions = 4;
+
 class Matrix {
     constructor (rowVectors) {
         this.rowVectors = rowVectors
@@ -157,7 +159,12 @@ class Matrix {
 
 class HighDimensionalVector {
     constructor (components) {
-        this.components = components
+        if (components.length !== dimensions) {
+            this.components = Array(dimensions).fill().map((_, i) => components[i] ?? 0);
+        } else {
+            this.components = components;
+        }
+        
     }
 
     /**
@@ -368,7 +375,7 @@ class Sphere {
 
 class AxisAlignedHypercube {
     constructor (position, dimensions) {
-        this.position = position
+        this.positionVector = position
         this.dimensions = dimensions
         this.color = "black"
         this.color2 = seededRandom();
@@ -380,8 +387,8 @@ class AxisAlignedHypercube {
         // Create an array for the normal components.
         const normalComponents = Array(this.dimensions.length).fill(0);
         for (let i = 0; i < this.dimensions.length; i++) {
-            const lower = this.position.components[i];
-            const upper = this.position.components[i] + this.dimensions[i];
+            const lower = this.positionVector.components[i];
+            const upper = this.positionVector.components[i] + this.dimensions[i];
             if (Math.abs(point.components[i] - lower) < epsilon) {
                 normalComponents[i] = -1;
                 break;  // assume only one face is hit
@@ -398,7 +405,7 @@ class AxisAlignedHypercube {
             return null
         }
 
-        return this.position.add(
+        return this.positionVector.add(
             new HighDimensionalVector(dimensions.map(dimension => dimension / 2))
         )
     }
@@ -410,7 +417,7 @@ class AxisAlignedHypercube {
 
         const closestPointToHypercubeBoundary = new HighDimensionalVector(
             Array(this.dimensions.length).fill().map((_, i) => {
-                const [lowBound, highBound] = [this.position.components[i], this.position.components[i] + this.dimensions[i]]
+                const [lowBound, highBound] = [this.positionVector.components[i], this.positionVector.components[i] + this.dimensions[i]]
                 return Math.max(lowBound, Math.min(positionVector.components[i], highBound))
             })
         )
@@ -425,7 +432,7 @@ class AxisAlignedHypercube {
 
         ctx.beginPath()
         ctx.strokeStyle = this.color
-        ctx.rect(this.position.components[firstAxis], this.position.components[secondAxis], this.dimensions[0], this.dimensions[1])
+        ctx.rect(this.positionVector.components[firstAxis], this.positionVector.components[secondAxis], this.dimensions[0], this.dimensions[1])
         ctx.stroke()
     }
 
@@ -435,11 +442,11 @@ class AxisAlignedHypercube {
         }
 
         for (let i = 0; i < this.dimensions.length; i++) {
-            if (p.components[i] < this.position.components[i]) {
+            if (p.components[i] < this.positionVector.components[i]) {
                 return false;
             }
 
-            if (p.components[i] > this.position.components[i] + this.dimensions[i]) {
+            if (p.components[i] > this.positionVector.components[i] + this.dimensions[i]) {
                 return false;
             }
         }
@@ -459,7 +466,7 @@ class AxisAlignedHypercube {
         for (let i = 0; i < this.dimensions.length; i++) {
             const rayOrigin = highDimensionalRay.positionVector.components[i]
             const rayDirection = highDimensionalRay.unitVector.components[i]
-            const [lowBound, highBound] = [this.position.components[i], this.position.components[i] + this.dimensions[i]]
+            const [lowBound, highBound] = [this.positionVector.components[i], this.positionVector.components[i] + this.dimensions[i]]
 
             if (rayDirection === 0) {
                 if (rayOrigin < lowBound || rayOrigin > highBound) {
@@ -739,7 +746,7 @@ const topProjection = topProjectionCanvas.getContext("2d")
 const outputCanvas = document.querySelector("#raytraced")
 const output = outputCanvas.getContext("2d")
 
-const player = new Player(new HighDimensionalVector([200, 200, 0, 0]), 4)
+const player = new Player(new HighDimensionalVector([200, 200, 0, 0].slice(0, dimensions)), dimensions)
 
 const audioContext = new AudioContext()
 const minFrequency = 100
@@ -848,7 +855,9 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
     for (let j = 0; j < player.dimension; j++) {
         for (let i = 0; i < j; i++, counter++) {
             if (counter >= rotationKeyPairs.length) {
-                throw new Error("Not enough rotations described for the given dimension")
+                // throw new Error("Not enough rotations described for the given dimension")
+               console.log("Not enough rotations described for the given dimension")
+               break;
             }
 
             const [leftKey, rightKey] = rotationKeyPairs[counter]
@@ -933,7 +942,7 @@ const maxFreq = 3000
 
 // const pointsForSoundSampling = zOrderCurveND(4, 2).map(point => new HighDimensionalVector(point));
 
-const dimensions = 4;
+
 const offset = new HighDimensionalVector(Array(dimensions).fill(1)).scale(0.5).negate();
 
 const interpolateList = (vecs, numSubPoints=1) => {
@@ -1003,6 +1012,40 @@ table["KeyZ"] = () => {
 
     document.querySelector("#screen-is-on").style.display = isScreenOn ? "block" : "none"
     document.querySelector("#screen-is-off").style.display = !isScreenOn ? "block" : "none"
+}
+
+const rotateMatrixToAlignRow0 = (matrix, targetVector) => {
+    // Ensure the target vector is normalized
+    let r0 = targetVector.normalize();
+
+    // Pick an arbitrary non-parallel vector to start Gram-Schmidt
+    let arbitraryVector = new HighDimensionalVector([1, 0, 0, 0]); 
+    if (Math.abs(r0.dot(arbitraryVector)) > 0.9) { // Avoid parallel vectors
+        arbitraryVector = new HighDimensionalVector([0, 1, 0, 0]);
+    }
+
+    // Use Gram-Schmidt to compute orthonormal basis
+    let r1 = arbitraryVector.add(r0.scale(-r0.dot(arbitraryVector))).normalize();
+    let r2 = new HighDimensionalVector([1, 1, 1, 1]).add(r0.scale(-r0.dot(new HighDimensionalVector([1, 1, 1, 1]))))
+        .add(r1.scale(-r1.dot(new HighDimensionalVector([1, 1, 1, 1])))).normalize();
+    let r3 = new HighDimensionalVector([1, -1, 1, -1]).add(r0.scale(-r0.dot(new HighDimensionalVector([1, -1, 1, -1]))))
+        .add(r1.scale(-r1.dot(new HighDimensionalVector([1, -1, 1, -1]))))
+        .add(r2.scale(-r2.dot(new HighDimensionalVector([1, -1, 1, -1])))).normalize();
+
+    // Construct and return the new orthogonal matrix
+    return new Matrix([r0, r1, r2, r3]);
+}
+
+table['Period'] = () => {
+
+    const targetShape = maze.shapes.map(shape => ({shape, dist:shape.getDistanceToBoundary(player.position)})).sort((a,b) => a.dist - b.dist)[0].shape;
+
+
+    let targetVector = targetShape.positionVector.add(player.position.negate())
+    let orthogonalMatrix = new Matrix(player.basis)
+
+    let rotatedMatrix = rotateMatrixToAlignRow0(orthogonalMatrix, targetVector);
+    player.basis = rotatedMatrix.rowVectors
 }
 
 window.addEventListener("keydown", (e) => {
