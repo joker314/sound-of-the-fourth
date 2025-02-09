@@ -71,7 +71,7 @@ const setUpGainNodes = (audioCtx, minFreq, maxFreq, numberOfPoints) => Array(num
     gainNode.gain.value = 0;
     gainNode.connect(audioCtx.destination);
     // const freq = minFreq + (maxFreq-minFreq) * i/points.length;
-    const freq = Math.exp(Math.log(minFreq) + i / points.length * (Math.log(maxFreq) - Math.log(minFreq)));
+    const freq = Math.exp(Math.log(minFreq) + i / numberOfPoints * (Math.log(maxFreq) - Math.log(minFreq)));
     const oscillator = audioCtx.createOscillator();
     oscillator.type = 'sine';
     oscillator.frequency.value = freq;
