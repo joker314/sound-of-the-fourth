@@ -504,6 +504,9 @@ class AxisAlignedHypercube {
     }
 }
 
+let horizontalResolution = 10;
+
+
 class Player {
     constructor (position, dimension) {
         this.position = position
@@ -560,8 +563,7 @@ class Player {
             shape.color = "black"
         }
     
-        const horizontalResolution = 10;
-        const verticalResolution = 10;
+        const verticalResolution = horizontalResolution;
         const fieldOfView = Math.PI / 3;  // 60° vertical FOV
         const aspect = output.canvas.width / output.canvas.height;
         const halfFov = fieldOfView / 2;
@@ -690,7 +692,7 @@ class AxisDescription {
 }
 
 const maze = new Maze([
-    new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), [50, 50, 50, 50]),
+    new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), Array(dimensions).fill(50)),
     new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
     new Sphere(new HighDimensionalVector([400, 300, 0, 0]), 80),
     new Sphere(new HighDimensionalVector([400, 200, 100, 0]), 80),
@@ -780,6 +782,9 @@ window.addEventListener("click", () => audioContext.resume())
 const renderKey = keyName => {
     if (keyName.startsWith("Key")) {
         return keyName.substr(3)
+    }
+    if (keyName.startsWith("Digit")) {
+        return keyName.substr("Digit".length)
     }
 
     return {
@@ -893,6 +898,7 @@ const axisDescriptions = [
     new AxisDescription("right", "left", "to the right", "to the left", "blue"),
     new AxisDescription("up", "down", "above", "below", "green"),
     new AxisDescription("ana", "kata", "ana", "kata", "hotpink"),
+    new AxisDescription("verda", "vexa", "verda", "vexa", "#7f76ff"),
 ]
 
 const table = createKeyBindingTable(
@@ -901,7 +907,8 @@ const table = createKeyBindingTable(
         ["ArrowDown", "ArrowUp"],
         ["KeyO", "KeyP"],
         ["KeyU", "KeyI"],
-        ["KeyA", "KeyS"]
+        ["KeyA", "KeyS"],
+        ["KeyQ", "KeyW"],
     ],
     // Rotations
     [
@@ -910,7 +917,11 @@ const table = createKeyBindingTable(
         ["KeyB", "KeyV"],
         ["KeyD", "KeyF"],
         ["KeyG", "KeyH"],
-        ["KeyJ", "KeyK"]
+        ["KeyJ", "KeyK"],
+        ["Digit1", "Digit2"],
+        ["Digit3", "Digit4"],
+        ["Digit5", "Digit6"],
+        ["Digit7", "Digit8"],
     ],
     player
 )
@@ -1068,14 +1079,14 @@ window.addEventListener("keydown", (e) => {
     projectOntoAxisAlignedPlane(topProjection, maze, player, 0, 1)
     player.rayTrace(maze, output, gains)
 
-    updateSound(gainNodes, pointsForSoundSampling, point => {
-        // const offset = new HighDimensionalVector(Array(point.components.length).fill(1)).scale(0.5).negate();
-        const scaledAndOffsetPoint = point.scale(100);
+    // updateSound(gainNodes, pointsForSoundSampling, point => {
+    //     // const offset = new HighDimensionalVector(Array(point.components.length).fill(1)).scale(0.5).negate();
+    //     const scaledAndOffsetPoint = point.scale(100);
 
-        const rotatedPoint = (new Matrix(player.basis)).transformHighDimensionalVector(scaledAndOffsetPoint);
+    //     const rotatedPoint = (new Matrix(player.basis)).transformHighDimensionalVector(scaledAndOffsetPoint);
 
-        return maze.amplitudeAt(player.position.add(rotatedPoint));
-    });
-    audioCtx.resume()
+    //     return maze.amplitudeAt(player.position.add(rotatedPoint));
+    // });
+    // audioCtx.resume()
 })
 player.rayTrace(maze, output, gains)
