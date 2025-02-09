@@ -6,14 +6,42 @@ class Matrix {
         console.assert(rowVectors.every(row => row.length === rowVectors[0].length))
     }
 
+    
+    get toString() {
+        const rows = this.rowVectors.map(row => 
+            '[' + row.components.map(n => n.toFixed(4).padStart(8)).join(' ') + ']'
+        );
+        return '[\n  ' + rows.join('\n') + '\n]';
+    }
+
     negate () {
         return new Matrix(this.rowVectors.map(row => row.negate()))
     }
 
     transformHighDimensionalVector(vector) {
-        console.assert(this.rowVectors[0].length === vector.length)
+        console.assert(this.rowVectors[0].components.length === vector.components.length)
 
         return new HighDimensionalVector(this.rowVectors.map(row => row.dot(vector)))
+    }
+
+    matmul(matrix) {
+        // Check dimensions match for matrix multiplication
+        console.assert(this.rowVectors[0].components.length === matrix.rowVectors.length)
+
+        // For each row in this matrix, multiply by each column in other matrix
+        const resultRows = this.rowVectors.map(row => {
+            // For each column in other matrix
+            const newComponents = Array(matrix.rowVectors[0].components.length).fill(0)
+            for (let j = 0; j < matrix.rowVectors[0].components.length; j++) {
+                // Dot product of row with jth column of other matrix
+                newComponents[j] = matrix.rowVectors.reduce((sum, otherRow, k) => {
+                    return sum + row.components[k] * otherRow.components[j]
+                }, 0)
+            }
+            return new HighDimensionalVector(newComponents)
+        })
+
+        return new Matrix(resultRows)
     }
 
     static identityMatrix(dimension) {
@@ -389,7 +417,9 @@ class Player {
     }
 
     updateBasisByMatrix(matrix) {
-        this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
+        // this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
+        this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
+        // this.basis = new Matrix(this.basis).matmul(matrix).rowVectors;
     }
 
     /*
@@ -698,11 +728,17 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
 
             const [leftKey, rightKey] = rotationKeyPairs[counter]
 
-            const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
-            const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
+            // const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
+            // const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
 
             lookupTable[leftKey] = () => {
-                player.updateBasisByMatrix(leftMatrix);
+                const leftMatrix = Matrix.planarRotationMatrix(i,j, player.dimension, ROTATION_STEP)
+                // const a = (new Matrix(player.basis)).matmul(leftMatrix)
+                const a = (Matrix.identityMatrix(player.basis.length)).matmul(leftMatrix)
+
+                console.log(a.toString)
+
+                player.updateBasisByMatrix(a);
                 hintWithKeys(leftKey, rightKey, true, "teal")
                 rotationHint(
                     ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
@@ -710,6 +746,8 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
                 )
             }
             lookupTable[rightKey] = () => {
+                const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
+
                 player.updateBasisByMatrix(rightMatrix);
                 hintWithKeys(leftKey, rightKey, false, "teal")
                 rotationHint(
