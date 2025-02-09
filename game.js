@@ -225,6 +225,9 @@ class HighDimensionalRay {
     }
 
     findFirstShape(shapes) {
+        if (shapes.length === 0) {
+            return null;
+        }
         const firstShape = shapes.toSorted((a, b) => {
             const aDistance = a.distanceAlongRay(this)
             const bDistance = b.distanceAlongRay(this)
@@ -635,11 +638,13 @@ class Maze {
         let score = 0
         let capturedSuccessfully = false
 
-        for (let shape of this.shapes) {
+        // for (let shape of this.shapes) {
+        for (let i=this.shapes.length-1; i >= 0; i--) {
+            const shape = this.shapes[i];
             if (shape.containsPoint(positionVector)) {
                 score += REWARD
                 capturedSuccessfully = true
-                shape.remove()
+                this.shapes.splice(i, 1);
             } 
         }
 
