@@ -155,7 +155,7 @@ class Sphere {
     constructor (positionVector, radius) {
         this.positionVector = positionVector
         this.radius = radius
-        this.color2 = seededRandom() * 100;
+        this.color2 = seededRandom();
     }
 
     render2D (ctx) {
@@ -205,6 +205,7 @@ class AxisAlignedHypercube {
         this.position = position
         this.dimensions = dimensions
         this.color = "black"
+        this.color2 = seededRandom();
     }
 
     render2D(ctx) {
@@ -353,19 +354,19 @@ class Player {
                 const closestShape = ray.findFirstShape(maze.shapes);
     
                 if (closestShape) {
-                    const distance = closestShape.distanceAlongRay(ray);
-                    const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
-                    output.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
-
                     // const distance = closestShape.distanceAlongRay(ray);
-                    // // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
-                    // // const v = (100/distance) * 100;
-                    // const v = 100 - distance * 0.5/255*100
-                    // const clamp = (v, min, max) => Math.max(max, Math.min(min, v));
-                    // const brightness = clamp(0, 100, v);
+                    // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
+                    // output.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
+
+                    const distance = closestShape.distanceAlongRay(ray);
+                    // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
+                    // const v = (100/distance) * 100;
+                    const v = 100 - distance * 0.5/255*100
+                    const clamp = (v, min, max) => Math.max(max, Math.min(min, v));
+                    const brightness = clamp(0, 100, v);
                     
-                    // // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
-                    // output.fillStyle = `hsl(${closestShape.color2}, 50%, ${brightness}%)`;
+                    // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
+                    output.fillStyle = `hsl(${closestShape.color2*360}, 50%, ${brightness}%)`;
                 } else {
                     output.fillStyle = "black";
                 }
@@ -386,7 +387,7 @@ const maze = new Maze([
     new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), [50, 50, 50, 50]),
     new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
     new Sphere(new HighDimensionalVector([400, 300, 0, 0]), 80),
-    new Sphere(new HighDimensionalVector([400, 300, 100, 0]), 80),
+    new Sphere(new HighDimensionalVector([400, 200, 100, 0]), 80),
 ])
 
 function renderMaze2D(ctx, maze, player) {
