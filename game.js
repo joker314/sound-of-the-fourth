@@ -390,7 +390,6 @@ class Maze {
     // spheres and hypercubes?
     amplitudeAt (positionVector) {
         let totalContribution = 0
-
         for (let shape of this.shapes) {
             if (shape.containsPoint(positionVector)) {
                 totalContribution += 1
@@ -551,7 +550,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const minFreq = 100
 const maxFreq = 3000
 
-const pointsForSoundSampling = zOrderCurveND(3, 3).map(point => new HighDimensionalVector(point));
+const pointsForSoundSampling = zOrderCurveND(4, 2).map(point => new HighDimensionalVector(point));
 const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, pointsForSoundSampling.length)
 
 window.addEventListener("keydown", (e) => {
@@ -562,6 +561,13 @@ window.addEventListener("keydown", (e) => {
     renderMaze2D(topProjection, maze, player)
     player.rayTrace(maze, output, gains)
 
-    updateSound(gainNodes, pointsForSoundSampling, point => maze.amplitudeAt(point.add(player.position)))
+    updateSound(gainNodes, pointsForSoundSampling, point => {
+        const offset = new HighDimensionalVector(Array(point.components.length).fill(1)).scale(0.5).negate();
+        const scaledAndOffsetPoint = point.add(offset).scale(100);
+
+        const rotatedPoint = (new Matrix(player.basis)).transformHighDimensionalVector(scaledAndOffsetPoint);
+
+        return maze.amplitudeAt(player.position.add(rotatedPoint));
+    });
     audioCtx.resume()
 })
