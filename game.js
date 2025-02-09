@@ -158,6 +158,14 @@ class Sphere {
         this.color2 = seededRandom();
     }
 
+    getCentre() {
+        return this.positionVector
+    }
+
+    getDistanceToBoundary(positionVector) {
+        return Math.abs(positionVector.add(this.positionVector.negate()).norm() - this.radius)
+    }
+
     containsPoint(positionVector) {
         return positionVector.add(this.positionVector.negate()).norm() <= this.radius
     }
@@ -210,6 +218,23 @@ class AxisAlignedHypercube {
         this.dimensions = dimensions
         this.color = "black"
         this.color2 = seededRandom();
+    }
+
+    getCentre () {
+        return this.position.add(
+            new HighDimensionalVector(dimensions.map(dimension => dimension / 2))
+        )
+    }
+
+    getDistanceToBoundary (positionVector) {
+        const closestPointToHypercubeBoundary = new HighDimensionalVector(
+            Array(this.dimensions.length).fill().map((_, i) => {
+                const [lowBound, highBound] = [this.position.components[i], this.position.components[i] + this.dimensions[i]]
+                return Math.max(lowBound, Math.min(positionVector.components[i], highBound))
+            })
+        )
+
+        return closestPointToHypercubeBoundary.add(positionVector.negate()).norm()
     }
 
     render2D(ctx) {
