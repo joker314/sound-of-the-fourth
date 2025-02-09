@@ -1079,8 +1079,8 @@ const rotateMatrixToAlignRow0 = (matrix, targetVector) => {
 
     // Use Gram-Schmidt to compute the remaining n-1 orthonormal vectors
     for (let i = 1; i < n; i++) {
-        // let candidateVector = HighDimensionalVector.nthBasisVector(i, n);
-        let candidateVector = matrix.rowVectors[i];
+        let candidateVector = HighDimensionalVector.nthBasisVector(i, n);
+        // let candidateVector = matrix.rowVectors[i];
 
         // Orthogonalize against previous basis vectors
         for (let j = 0; j < orthonormalBasis.length; j++) {
