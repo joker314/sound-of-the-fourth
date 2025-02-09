@@ -170,10 +170,16 @@ class Sphere {
         return positionVector.add(this.positionVector.negate()).norm() <= this.radius
     }
 
-    render2D (ctx) {
+    projectOntoAxisAlignedPlane (ctx, firstAxis, secondAxis) {
         ctx.beginPath()
         ctx.strokeStyle = this.color
-        ctx.arc(this.positionVector.x, this.positionVector.y, this.radius, 0, 2 * Math.PI)
+        ctx.arc(
+            this.positionVector.components[firstAxis],
+            this.positionVector.components[secondAxis],
+            this.radius,
+            0,
+            2 * Math.PI
+        )
         ctx.stroke()
     }
 
@@ -237,10 +243,10 @@ class AxisAlignedHypercube {
         return closestPointToHypercubeBoundary.add(positionVector.negate()).norm()
     }
 
-    render2D(ctx) {
+    projectOntoAxisAlignedPlane(ctx, firstAxis, secondAxis) {
         ctx.beginPath()
         ctx.strokeStyle = this.color
-        ctx.rect(this.position.x, this.position.y, this.dimensions[0], this.dimensions[1])
+        ctx.rect(this.position.components[firstAxis], this.position.components[secondAxis], this.dimensions[0], this.dimensions[1])
         ctx.stroke()
     }
 
@@ -443,24 +449,38 @@ const maze = new Maze([
     new Sphere(new HighDimensionalVector([400, 200, 100, 0]), 80),
 ])
 
-function renderMaze2D(ctx, maze, player) {
-    const mapUp = HighDimensionalVector.nthBasisVector(1, 4)
-    const mapRight = HighDimensionalVector.nthBasisVector(0, 4)
+function projectOntoAxisAlignedPlane(ctx, maze, player, firstAxis, secondAxis) {
+    const mapRight = HighDimensionalVector.nthBasisVector(firstAxis, 4)
+    const mapUp = HighDimensionalVector.nthBasisVector(secondAxis, 4)
 
     const phi = Math.atan2(player.forward.dot(mapUp), player.forward.dot(mapRight))
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
     // Render the player
+    // First, render the dotted arc in front of them that shows their viewing direction
     ctx.beginPath()
     ctx.strokeStyle = "red"
     ctx.setLineDash([2, 5]);
-    ctx.arc(player.position.x, player.position.y, 20, phi - Math.PI / 4, phi + Math.PI / 4)
+    ctx.arc(
+        player.position.components[firstAxis],
+        player.position.components[secondAxis],
+        20,
+        phi - Math.PI / 4,
+        phi + Math.PI / 4
+    )
     ctx.stroke()
+    // Secondly, render the filled circle that shows their exact position
     ctx.beginPath()
     ctx.fillStyle = "red"
     ctx.setLineDash([]);
-    ctx.arc(player.position.x, player.position.y, 5, 0, 2 * Math.PI)
+    ctx.arc(
+        player.position.components[firstAxis],
+        player.position.components[secondAxis],
+        5,
+        0,
+        2 * Math.PI
+    )
     ctx.fill()
 
     // Recolour the obstacles
@@ -469,7 +489,7 @@ function renderMaze2D(ctx, maze, player) {
     // Render the obstacles 
     // TODO: this logic should be part of each shape
     for (let shape of maze.shapes) {
-        shape.render2D(ctx)
+        shape.projectOntoAxisAlignedPlane(ctx, firstAxis, secondAxis)
     }
 }
 
@@ -506,7 +526,7 @@ for (let i = 0; i < outputCanvas.width; i++) {
     oscillators.push(oscillator)
 }
 
-renderMaze2D(topProjection, maze, player)
+projectOntoAxisAlignedPlane(topProjection, maze, player, 0, 1)
 
 window.addEventListener("click", () => audioContext.resume())
 
@@ -689,7 +709,7 @@ window.addEventListener("keydown", (e) => {
         table[e.code]()
     }
 
-    renderMaze2D(topProjection, maze, player)
+    projectOntoAxisAlignedPlane(topProjection, maze, player, 0, 1)
     player.rayTrace(maze, output, gains)
 
     updateSound(gainNodes, pointsForSoundSampling, point => {
