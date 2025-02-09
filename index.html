@@ -28,11 +28,20 @@
             }
 
             kbd.small {
-                min-width: 10px;
-                height: 10px;
-                line-height: 10px;
-                padding: 2px;
+                min-width: 15px;
+                height: 15px;
+                line-height: 15px;
+                padding: 5px;
                 margin: 1px;
+            }
+
+            .score-div {
+                padding: 10px;
+                margin: 5px;
+                font-size: 1.5em;
+                font-weight: bold;
+                border: 2px solid black;
+                display: inline-block;
             }
 
             * {
@@ -41,7 +50,10 @@
         </style>
     </head>
     <body>
-        <h1>This page plays a sound - turn your volume down</h1>
+        <div class="score-div">
+            Score: <span id="score">0</span>
+        </div>
+        Gain points by capturing shapes using <kbd class="small">Space</kbd>, when you're inside them
         <p>
             <kbd class="small">U</kbd>
             <kbd class="small">I</kbd>
