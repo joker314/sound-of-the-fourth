@@ -341,6 +341,7 @@ class Player {
         this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
     }
 
+    /*
     look(maze) {
         for (let shape of maze.shapes) {
             shape.color = "black"
@@ -353,9 +354,14 @@ class Player {
             closestShape.color = "blue"
         }
     }
+    */
 
     rayTrace(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height);
+
+        for (let shape of maze.shapes) {
+            shape.color = "black"
+        }
     
         // Use a finer resolution
         const horizontalResolution = 10;
@@ -402,6 +408,7 @@ class Player {
                     
                     // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
                     output.fillStyle = `hsl(${closestShape.color2*360}, 50%, ${brightness}%)`;
+                    closestShape.color = `hsl(180, 100%, ${Math.max(50, brightness) / 2}%)` // blue on the 2D projection
                 } else {
                     output.fillStyle = "black";
                 }
@@ -484,7 +491,7 @@ function projectOntoAxisAlignedPlane(ctx, maze, player, firstAxis, secondAxis) {
     ctx.fill()
 
     // Recolour the obstacles
-    player.look(maze)
+    // player.look(maze)
 
     // Render the obstacles 
     // TODO: this logic should be part of each shape
