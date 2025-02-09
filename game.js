@@ -643,8 +643,14 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
         const frontVector = player.basis[i].scale(TRANSLATION_STEP)
         const backVector = frontVector.negate()
 
-        lookupTable[backKey] = () => { player.position = player.position.add(backVector) }
-        lookupTable[frontKey] = () => { player.position = player.position.add(frontVector) }
+        lookupTable[backKey] = () => {
+            player.position = player.position.add(backVector)
+            document.querySelector("#hint").textContent = `You're moving ${dimensionInverses[i]} (without rotating), which you can undo by moving ${dimensionDescriptions[i]} using key ${frontKey}`
+        }
+        lookupTable[frontKey] = () => {
+            player.position = player.position.add(frontVector)
+            document.querySelector("#hint").textContent = `You're moving ${dimensionDescriptions[i]} (without rotating), which you can undo by moving ${dimensionInverses[i]} using key ${backKey}`
+        }
     })
 
     let counter = 0
@@ -659,8 +665,14 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
             const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
             const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
 
-            lookupTable[leftKey] = () => { player.updateBasisByMatrix(leftMatrix); console.log("applying", leftMatrix)}
-            lookupTable[rightKey] = () => { player.updateBasisByMatrix(rightMatrix); console.log("inverting by", rightMatrix) }
+            lookupTable[leftKey] = () => {
+                player.updateBasisByMatrix(leftMatrix);
+                document.querySelector("#hint").textContent = `You're rotating - changing what it would mean to move '${dimensionDescriptions[i]}' or '${dimensionDescriptions[j]}' (without changing your position, or the directions of the other axes). You can undo this rotation using ${rightKey}`
+            }
+            lookupTable[rightKey] = () => {
+                player.updateBasisByMatrix(rightMatrix);
+                document.querySelector("#hint").textContent = `You're rotating - changing what it would mean to move '${dimensionDescriptions[i]}' or '${dimensionDescriptions[j]}' (without changing your position, or the directions of the other axes). You can undo this rotation using ${leftKey}`
+            }
         }
     }
 
