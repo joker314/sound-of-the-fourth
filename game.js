@@ -817,19 +817,56 @@ function translationHint(axis) {
     document.querySelector("#translation-right-hint").style.color = axis.color
 }
 
-function rotationHint(changedAxisOne, changedAxisTwo, unchangedAxisOne, unchangedAxisTwo) {
+function rotationHint(changedAxes, unchangedAxes) {
+    // HTML should be updated to:
+    /*
+    <span id="rotation-hint">
+        rotation, changing what's
+        <span id="rotation-changed-hints"></span>
+        while keeping what's  
+        <span id="rotation-unchanged-hints"></span>
+        the same
+    </span>
+    */
+    
     document.querySelector("#translation-hint").style.display = "none"
     document.querySelector("#rotation-hint").style.display = "inline"
 
-    document.querySelector("#rotation-left-changed-hint").textContent = changedAxisOne.inThatDirection
-    document.querySelector("#rotation-right-changed-hint").textContent = changedAxisTwo.inThatDirection
-    document.querySelector("#rotation-left-unchanged-hint").textContent = unchangedAxisOne.inThatDirection
-    document.querySelector("#rotation-right-unchanged-hint").textContent = unchangedAxisTwo.inThatDirection
+    // Create text for changed axes
+    const changedText = changedAxes.map((axis, i) => {
+        const span = document.createElement("span")
+        span.textContent = axis.inThatDirection
+        span.style.color = axis.color
+        return span
+    })
 
-    document.querySelector("#rotation-left-changed-hint").style.color = changedAxisOne.color
-    document.querySelector("#rotation-right-changed-hint").style.color = changedAxisTwo.color
-    document.querySelector("#rotation-left-unchanged-hint").style.color = unchangedAxisOne.color
-    document.querySelector("#rotation-right-unchanged-hint").style.color = unchangedAxisTwo.color
+    // Create text for unchanged axes  
+    const unchangedText = unchangedAxes.map((axis, i) => {
+        const span = document.createElement("span")
+        span.textContent = axis.inThatDirection
+        span.style.color = axis.color
+        return span
+    })
+
+    // Clear and populate changed hints
+    const changedHints = document.querySelector("#rotation-changed-hints")
+    changedHints.innerHTML = ""
+    changedText.forEach((span, i) => {
+        changedHints.appendChild(span)
+        if (i < changedText.length - 1) {
+            changedHints.appendChild(document.createTextNode(" and "))
+        }
+    })
+
+    // Clear and populate unchanged hints
+    const unchangedHints = document.querySelector("#rotation-unchanged-hints")
+    unchangedHints.innerHTML = ""
+    unchangedText.forEach((span, i) => {
+        unchangedHints.appendChild(span)
+        if (i < unchangedText.length - 1) {
+            unchangedHints.appendChild(document.createTextNode(" and "))
+        }
+    })
 }
 
 /**
@@ -875,16 +912,16 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
 
                 hintWithKeys(leftKey, rightKey, true, "teal")
                 rotationHint(
-                    ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
-                    ...axisDescriptions.filter((_, index) => ![i, j].includes(index))
+                    axisDescriptions.filter((_, index) => [i, j].includes(index)),
+                    axisDescriptions.filter((_, index) => ![i, j].includes(index))
                 )
             }
             lookupTable[rightKey] = () => {
                 player.updateBasisByMatrix(rightMatrix);
                 hintWithKeys(leftKey, rightKey, false, "teal")
                 rotationHint(
-                    ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
-                    ...axisDescriptions.filter((_, index) => ![i, j].includes(index))
+                    axisDescriptions.filter((_, index) => [i, j].includes(index)),
+                    axisDescriptions.filter((_, index) => ![i, j].includes(index))
                 )
             }
         }
