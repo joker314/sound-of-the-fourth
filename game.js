@@ -156,21 +156,38 @@ class Sphere {
         this.positionVector = positionVector
         this.radius = radius
         this.color2 = seededRandom();
+        this.removed = false
     }
 
     getCentre() {
+        if (this.removed) {
+            return null
+        }
+
         return this.positionVector
     }
 
     getDistanceToBoundary(positionVector) {
+        if (this.removed) {
+            return Infinity
+        }
+
         return Math.abs(positionVector.add(this.positionVector.negate()).norm() - this.radius)
     }
 
     containsPoint(positionVector) {
+        if (this.removed) {
+            return false
+        }
+
         return positionVector.add(this.positionVector.negate()).norm() <= this.radius
     }
 
     projectOntoAxisAlignedPlane (ctx, firstAxis, secondAxis) {
+        if (this.removed) {
+            return
+        }
+
         ctx.beginPath()
         ctx.strokeStyle = this.color
         ctx.arc(
@@ -184,6 +201,10 @@ class Sphere {
     }
 
     distanceAlongRay(highDimensionalRay) {
+        if (this.removed) {
+            return Infinity
+        }
+
         const oMinusC = this.positionVector.add(highDimensionalRay.positionVector.negate()).negate()
         const rayUnit = highDimensionalRay.unitVector
 
@@ -216,6 +237,10 @@ class Sphere {
 
         return possibleDistances[0]
     }
+
+    remove () {
+        this.removed = true
+    }
 }
 
 class AxisAlignedHypercube {
@@ -224,15 +249,24 @@ class AxisAlignedHypercube {
         this.dimensions = dimensions
         this.color = "black"
         this.color2 = seededRandom();
+        this.removed = false
     }
 
     getCentre () {
+        if (this.removed) {
+            return null
+        }
+
         return this.position.add(
             new HighDimensionalVector(dimensions.map(dimension => dimension / 2))
         )
     }
 
     getDistanceToBoundary (positionVector) {
+        if (this.removed) {
+            return Infinity
+        }
+
         const closestPointToHypercubeBoundary = new HighDimensionalVector(
             Array(this.dimensions.length).fill().map((_, i) => {
                 const [lowBound, highBound] = [this.position.components[i], this.position.components[i] + this.dimensions[i]]
@@ -244,6 +278,10 @@ class AxisAlignedHypercube {
     }
 
     projectOntoAxisAlignedPlane(ctx, firstAxis, secondAxis) {
+        if (this.removed) {
+            return
+        }
+
         ctx.beginPath()
         ctx.strokeStyle = this.color
         ctx.rect(this.position.components[firstAxis], this.position.components[secondAxis], this.dimensions[0], this.dimensions[1])
@@ -251,6 +289,10 @@ class AxisAlignedHypercube {
     }
 
     containsPoint(p) {
+        if (this.removed) {
+            return false
+        }
+
         for (let i = 0; i < this.dimensions.length; i++) {
             if (p.components[i] < this.position.components[i]) {
                 return false;
@@ -265,6 +307,10 @@ class AxisAlignedHypercube {
     }
 
     distanceAlongRay(highDimensionalRay) {
+        if (this.removed) {
+            return Infinity
+        }
+
         // The ray is only inside the hypercube in the interval [tMin, tMax]
         let tMin = -Infinity
         let tMax = Infinity
@@ -305,6 +351,10 @@ class AxisAlignedHypercube {
         }
 
         return -Infinity
+    }
+
+    remove () {
+        this.removed = true
     }
 }
 
@@ -707,6 +757,7 @@ table["Space"] = (e) => {
     }
 
     player.score += maze.performCaptureAt(player.position)
+    document.querySelector("#score").textContent = player.score
 }
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
