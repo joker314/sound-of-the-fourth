@@ -645,6 +645,17 @@ class Maze {
                 score += REWARD
                 capturedSuccessfully = true
                 this.shapes.splice(i, 1);
+
+                const q = 1/(1+ Math.exp(-(count-5)))
+
+                const newShape = new Sphere(new HighDimensionalVector([
+                    0 + Math.random()*400,
+                    0 + Math.random()*400,
+                    0 + Math.random()*100 * q,
+                    0 + Math.random()*100 * q,
+                ]), 30 + Math.random()*50);
+                this.shapes.push(newShape);
+                count++;
             } 
         }
 
@@ -655,6 +666,8 @@ class Maze {
         return score
     }
 }
+
+let count = 0;
 
 class AxisDescription {
     // e.g. "up", "down", "above", "below"
