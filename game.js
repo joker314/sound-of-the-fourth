@@ -584,7 +584,7 @@ class Player {
                     // Lambertian shading: the more the surface faces the light, the brighter it is.
                     const lambert = Math.max(0, normal.dot(lightDir));
                     // Map lambert factor to brightness (e.g., 50%-100% brightness)
-                    const brightness = 50 + lambert * 50;
+                    const brightness = 10 + lambert * 100;
                     
                     // Use the shape’s intrinsic color (e.g. shape.color2 interpreted as a hue) with the computed brightness.
                     output.fillStyle = `hsl(${closestShape.color2 * 360}, 50%, ${brightness}%)`;
