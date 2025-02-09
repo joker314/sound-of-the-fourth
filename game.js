@@ -18,6 +18,93 @@ class Matrix {
         return new Matrix(this.rowVectors.map(row => row.negate()))
     }
 
+    transpose() {
+        const numRows = this.rowVectors.length;
+        const numCols = this.rowVectors[0].components.length;
+        
+        // Create new array of vectors for transposed matrix
+        const transposedRows = Array(numCols).fill().map(() => Array(numRows).fill(0));
+        
+        // Fill in transposed values
+        for (let i = 0; i < numRows; i++) {
+            for (let j = 0; j < numCols; j++) {
+                transposedRows[j][i] = this.rowVectors[i].components[j];
+            }
+        }
+
+        // Convert arrays to HighDimensionalVectors
+        return new Matrix(transposedRows.map(row => new HighDimensionalVector(row)));
+    }
+
+    inverse() {
+        const n = this.rowVectors.length;
+        
+        // Create augmented matrix [A|I]
+        const augmented = new Array(n).fill().map(() => new Array(2 * n).fill(0));
+        
+        // Fill left side with original matrix
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                augmented[i][j] = this.rowVectors[i].components[j];
+            }
+        }
+        
+        // Fill right side with identity matrix
+        for (let i = 0; i < n; i++) {
+            augmented[i][i + n] = 1;
+        }
+
+        // Gaussian elimination
+        for (let i = 0; i < n; i++) {
+            // Find pivot
+            let pivot = augmented[i][i];
+            let pivotRow = i;
+            
+            // Find largest pivot in column
+            for (let j = i + 1; j < n; j++) {
+                if (Math.abs(augmented[j][i]) > Math.abs(pivot)) {
+                    pivot = augmented[j][i];
+                    pivotRow = j;
+                }
+            }
+
+            if (Math.abs(pivot) < 1e-10) {
+                throw new Error("Matrix is not invertible");
+            }
+
+            // Swap rows if needed
+            if (pivotRow !== i) {
+                [augmented[i], augmented[pivotRow]] = [augmented[pivotRow], augmented[i]];
+            }
+
+            // Scale row to make pivot 1
+            const scale = 1 / augmented[i][i];
+            for (let j = 0; j < 2 * n; j++) {
+                augmented[i][j] *= scale;
+            }
+
+            // Eliminate column
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    const factor = augmented[j][i];
+                    for (let k = 0; k < 2 * n; k++) {
+                        augmented[j][k] -= factor * augmented[i][k];
+                    }
+                }
+            }
+        }
+
+        // Extract right half (inverse matrix)
+        const inverse = new Array(n).fill().map(() => new Array(n));
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                inverse[i][j] = augmented[i][j + n];
+            }
+        }
+
+        return new Matrix(inverse.map(row => new HighDimensionalVector(row)));
+    }
+
     transformHighDimensionalVector(vector) {
         console.assert(this.rowVectors[0].components.length === vector.components.length)
 
@@ -418,8 +505,14 @@ class Player {
 
     updateBasisByMatrix(matrix) {
         // this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
-        this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
+        // this.basis = this.basis.map(basisVector => matrix.transpose().transformHighDimensionalVector(basisVector))
+        // this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
+        // this.basis = matrix.matmul(new Matrix(this.basis).transpose()).transpose().rowVectors;
         // this.basis = new Matrix(this.basis).matmul(matrix).rowVectors;
+
+        // leftMatrix.matmul(new Matrix(player.basis)).rowVectors;
+
+        this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
     }
 
     /*
@@ -728,17 +821,26 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
 
             const [leftKey, rightKey] = rotationKeyPairs[counter]
 
-            // const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
-            // const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
+            const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
+            const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
 
             lookupTable[leftKey] = () => {
-                const leftMatrix = Matrix.planarRotationMatrix(i,j, player.dimension, ROTATION_STEP)
+                // const leftMatrix = Matrix.planarRotationMatrix(i,j, player.dimension, ROTATION_STEP)
+                // const a = ().matmul(leftMatrix)
+                // const I = Matrix.identityMatrix(player.basis.length)
+                // const a = (Matrix.identityMatrix(player.basis.length)).matmul(leftMatrix)
+                // const a = (new Matrix(player.basis).transpose()).matmul(leftMatrix)
                 // const a = (new Matrix(player.basis)).matmul(leftMatrix)
-                const a = (Matrix.identityMatrix(player.basis.length)).matmul(leftMatrix)
+                // const a = I.matmul(leftMatrix)
+                // const a = leftMatrix;
 
-                console.log(a.toString)
+                // player.basis = leftMatrix.matmul(new Matrix(player.basis)).rowVectors;
 
-                player.updateBasisByMatrix(a);
+                // console.log(a.toString)
+
+                // player.updateBasisByMatrix(a);
+                player.updateBasisByMatrix(leftMatrix);
+
                 hintWithKeys(leftKey, rightKey, true, "teal")
                 rotationHint(
                     ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
@@ -746,7 +848,7 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
                 )
             }
             lookupTable[rightKey] = () => {
-                const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
+                // const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
 
                 player.updateBasisByMatrix(rightMatrix);
                 hintWithKeys(leftKey, rightKey, false, "teal")
@@ -779,8 +881,8 @@ const table = createKeyBindingTable(
     // Rotations
     [
         ["ArrowLeft", "ArrowRight"],
-        ["KeyN", "KeyM"],
-        ["KeyV", "KeyB"],
+        ["KeyM", "KeyN"],
+        ["KeyB", "KeyV"],
         ["KeyD", "KeyF"],
         ["KeyG", "KeyH"],
         ["KeyJ", "KeyK"]
