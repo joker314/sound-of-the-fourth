@@ -938,10 +938,12 @@ const screenOnPoints = -10
 let lastTimeWithScreenOn = Infinity 
 let isScreenOn = false 
 
-const timePenaltyInterval = setInterval(() => {
+function refreshTimeBasedScore() {
     player.score += performance.now() - lastTimeWithScreenOn >= 1 ? screenOffPoints : screenOnPoints
     document.querySelector("#score").textContent = player.score
-}, 5000)
+}
+
+const timePenaltyInterval = setInterval(refreshTimeBasedScore, 3000)
 
 table["KeyZ"] = () => {
     isScreenOn = !isScreenOn
