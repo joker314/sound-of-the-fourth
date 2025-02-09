@@ -477,7 +477,7 @@ class Player {
     constructor (position, dimension) {
         this.position = position
         this.dimension = dimension
-        this.score = 0
+        this.score = 500
 
         if (dimension < 3) {
             throw new Error("Need at least 3D to have a 'forward', 'right', and 'up' vector for the 2D raytracing")
@@ -914,6 +914,30 @@ const pointsForSoundSampling = [
     ...interpolateList(zOrderCurveND(dimensions, 2).map(point => new HighDimensionalVector(point).add(offset).scale(3)), 1),
 ]
 const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, pointsForSoundSampling.length)
+
+// Points for playing for 1 second
+const screenOffPoints = -1
+const screenOnPoints = -10
+
+let lastTimeWithScreenOn = Infinity 
+let isScreenOn = true 
+
+const timePenaltyInterval = setInterval(() => {
+    player.score += performance.now() - lastTimeWithScreenOn >= 1 ? screenOffPoints : screenOnPoints
+    document.querySelector("#score").textContent = player.score
+}, 1000)
+
+table["KeyZ"] = () => {
+    isScreenOn = !isScreenOn
+
+    document.querySelectorAll("canvas").forEach(canvas => {
+        canvas.style.display = isScreenOn ? "inline" : "none"
+    })
+
+    if (!isScreenOn) {
+        lastTimeWithScreenOn = performance.now()
+    }
+}
 
 window.addEventListener("keydown", (e) => {
     if (table[e.code]) {
