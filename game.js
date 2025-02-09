@@ -1,6 +1,4 @@
-// console.log = () => {}
-
-const dimensions = 4;
+const dimensions = 5;
 
 class Matrix {
     constructor (rowVectors) {
@@ -652,9 +650,10 @@ class Maze {
                 score += REWARD
                 capturedSuccessfully = true
                 this.shapes.splice(i, 1);
-                count++;
 
+                // for (let k=0; k < 10; k++) {
                 if (Math.random() < 0.5) {
+                    count++;
                     const q = 1/(1+ Math.exp(-(count-5)))
 
                     const newShape = new Sphere(new HighDimensionalVector([
@@ -665,6 +664,7 @@ class Maze {
                     ]), 30 + Math.random()*50);
                     this.shapes.push(newShape);
                 }
+                // }
             } 
         }
 
@@ -1015,27 +1015,38 @@ table["KeyZ"] = () => {
 }
 
 const rotateMatrixToAlignRow0 = (matrix, targetVector) => {
+    const n = targetVector.components.length;
+
     // Ensure the target vector is normalized
     let r0 = targetVector.normalize();
 
-    // Pick an arbitrary non-parallel vector to start Gram-Schmidt
-    let arbitraryVector = new HighDimensionalVector([1, 0, 0, 0]); 
+    // Pick an arbitrary non-parallel vector
+    let arbitraryVector = HighDimensionalVector.nthBasisVector(1, n);
     if (Math.abs(r0.dot(arbitraryVector)) > 0.9) { // Avoid parallel vectors
-        arbitraryVector = new HighDimensionalVector([0, 1, 0, 0]);
+        arbitraryVector = HighDimensionalVector.nthBasisVector(2, n);
     }
 
-    // Use Gram-Schmidt to compute orthonormal basis
-    let r1 = arbitraryVector.add(r0.scale(-r0.dot(arbitraryVector))).normalize();
-    let r2 = new HighDimensionalVector([1, 1, 1, 1]).add(r0.scale(-r0.dot(new HighDimensionalVector([1, 1, 1, 1]))))
-        .add(r1.scale(-r1.dot(new HighDimensionalVector([1, 1, 1, 1])))).normalize();
-    let r3 = new HighDimensionalVector([1, -1, 1, -1]).add(r0.scale(-r0.dot(new HighDimensionalVector([1, -1, 1, -1]))))
-        .add(r1.scale(-r1.dot(new HighDimensionalVector([1, -1, 1, -1]))))
-        .add(r2.scale(-r2.dot(new HighDimensionalVector([1, -1, 1, -1])))).normalize();
+    // Initialize the orthonormal basis with r0
+    let orthonormalBasis = [r0];
+
+    // Use Gram-Schmidt to compute the remaining n-1 orthonormal vectors
+    for (let i = 1; i < n; i++) {
+        let candidateVector = HighDimensionalVector.nthBasisVector(i, n);
+
+        // Orthogonalize against previous basis vectors
+        for (let j = 0; j < orthonormalBasis.length; j++) {
+            candidateVector = candidateVector.add(
+                orthonormalBasis[j].scale(-candidateVector.dot(orthonormalBasis[j]))
+            );
+        }
+
+        // Normalize and add to basis
+        orthonormalBasis.push(candidateVector.normalize());
+    }
 
     // Construct and return the new orthogonal matrix
-    return new Matrix([r0, r1, r2, r3]);
-}
-
+    return new Matrix(orthonormalBasis);
+};
 table['Period'] = () => {
 
     const targetShape = maze.shapes.map(shape => ({shape, dist:shape.getDistanceToBoundary(player.position)})).sort((a,b) => a.dist - b.dist)[0].shape;
