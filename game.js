@@ -183,6 +183,78 @@ class Sphere {
     }
 }
 
+class AxisAlignedHypercube {
+    constructor (position, dimensions) {
+        this.position = position
+        this.dimensions = dimensions
+        this.color = "black"
+    }
+
+    render2D(ctx) {
+        ctx.beginPath()
+        ctx.strokeStyle = this.color
+        ctx.rect(this.position.x, this.position.y, this.dimensions[0], this.dimensions[1])
+        ctx.stroke()
+    }
+
+    containsPoint(p) {
+        for (let i = 0; i < this.dimensions.length; i++) {
+            if (p.components[i] < this.position.components[i]) {
+                return false;
+            }
+
+            if (p.components[i] > this.position.components[i] + this.dimensions[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    distanceAlongRay(highDimensionalRay) {
+        // The ray is only inside the hypercube in the interval [tMin, tMax]
+        let tMin = -Infinity
+        let tMax = Infinity
+
+        for (let i = 0; i < this.dimensions.length; i++) {
+            const rayOrigin = highDimensionalRay.positionVector.components[i]
+            const rayDirection = highDimensionalRay.unitVector.components[i]
+            const [lowBound, highBound] = [this.position.components[i], this.position.components[i] + this.dimensions[i]]
+
+            if (rayDirection === 0) {
+                if (rayOrigin < lowBound || rayOrigin > highBound) {
+                    return Infinity
+                }
+            } else {
+                const entryAndExit = [
+                    (lowBound - rayOrigin) / rayDirection,
+                    (highBound - rayOrigin) / rayDirection
+                ]
+
+                entryAndExit.sort((a, b) => a - b)
+                
+                tMin = Math.max(tMin, entryAndExit[0])
+                tMax = Math.min(tMax, entryAndExit[1])
+            }
+        }
+
+        if (tMin > tMax) {
+            return Infinity 
+        }
+
+        if (tMin >= 0) {
+            return tMin
+        }
+
+        // Adding this because I think it should help in the case where we're inside the hypercube
+        if (tMax >= 0) {
+            return tMax
+        }
+
+        return -Infinity
+    }
+}
+
 class Player {
     constructor (position, dimension) {
         this.position = position
@@ -284,6 +356,7 @@ class Maze {
 }
 
 const maze = new Maze([
+    new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), [50, 50, 50, 50]),
     new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
     new Sphere(new HighDimensionalVector([400, 300, 0, 0]), 80),
 ])
