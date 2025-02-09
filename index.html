@@ -5,12 +5,55 @@
             canvas {
                 border: 1px solid lightgreen;
             }
+
+            kbd {
+                /* AI generated CSS for <kbd> */
+                display: inline-block;
+                min-width: 40px;  /* Set a reasonable default width */
+                height: 40px;     /* Fixed height */
+                line-height: 40px; /* Center text vertically */
+                text-align: center;
+                font-family: monospace;
+                font-size: 14px;
+                font-weight: bold;
+                color: #333;
+                /* background: linear-gradient(to top, #f5f5f5, #e0e0e0); */
+                border: 2px solid #ccc;
+                border-radius: 6px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 2px 2px rgba(255, 255, 255, 0.7);
+                padding: 5px;
+                margin: 3px;
+                cursor: default;
+                user-select: none;
+            }
+
+            * {
+                font-family: sans-serif;
+            }
         </style>
     </head>
     <body>
         <h1>This page plays a sound - turn your volume down</h1>
         <p>U/I/O/P/Down/Up for 3d translations. V/B/N/M/Left/Right for 3d rotations. A/S for 4d translation. D/F/G/H/J/K for 4d rotation.</p>
-        <p id="hint"></p>
+        <p id="hint" style="visibility: hidden;">
+            <kbd id="left-key">A</kbd>
+            <kbd id="right-key">B</kbd>
+            <span id="translation-hint">
+                translation
+                <span id="translation-left-hint"></span>/<span id="translation-right-hint"></span>
+            </span>
+            <span id="rotation-hint">
+                rotation, changing what's
+                <span id="rotation-left-changed-hint"></span>
+                or
+                <span id="rotation-right-changed-hint"></span>
+                while keeping what's
+                <span id="rotation-left-unchanged-hint"></span>
+                or
+                <span id="rotation-right-unchanged-hint"></span>
+                the same
+            </span>
+        </p>
         <canvas id="top" height="500" width="500">Canvas not supported</canvas>
         <canvas id="raytraced" height="500" width="500">Canvas not supported</canvas>
         <script src="imageToAudio.js"></script>

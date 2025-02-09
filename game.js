@@ -401,6 +401,17 @@ class Maze {
     }
 }
 
+class AxisDescription {
+    // e.g. "up", "down", "above", "below"
+    constructor (directionName, inverseName, inThatDirection, inThatInverse, color) {
+        this.directionName = directionName
+        this.inverseName = inverseName
+        this.inThatDirection = inThatDirection
+        this.inThatInverse
+        this.color = color
+    }
+}
+
 const maze = new Maze([
     new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), [50, 50, 50, 50]),
     new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
@@ -475,6 +486,57 @@ renderMaze2D(topProjection, maze, player)
 
 window.addEventListener("click", () => audioContext.resume())
 
+const renderKey = keyName => {
+    if (keyName.startsWith("Key")) {
+        return keyName.substr(3)
+    }
+
+    return {
+        "ArrowUp": "\u2191",
+        "ArrowDown": "\u2193",
+        "ArrowLeft": "\u2190",
+        "ArrowRight": "\u2192"
+    }[keyName]
+}
+
+function hintWithKeys(leftKey, rightKey, leftKeyPressed, color) {
+    document.querySelector("#hint").style.visibility = "visible"
+
+    document.querySelector("#left-key").textContent = renderKey(leftKey)
+    document.querySelector("#right-key").textContent = renderKey(rightKey)
+
+    document.querySelector("#left-key").style.border = leftKeyPressed ? "2px solid " + color : "1px solid grey"
+    document.querySelector("#right-key").style.border = !leftKeyPressed ? "2px solid " + color : "1px solid grey"
+}
+
+function translationHint(axis) {
+    console.log("showing translation hint")
+    document.querySelector("#translation-hint").style.display = "inline"
+    document.querySelector("#rotation-hint").style.display = "none"
+    
+    document.querySelector("#translation-left-hint").textContent = axis.directionName
+    document.querySelector("#translation-right-hint").textContent = axis.inverseName
+
+    document.querySelector("#translation-left-hint").style.color = axis.color
+    document.querySelector("#translation-right-hint").style.color = axis.color
+}
+
+function rotationHint(changedAxisOne, changedAxisTwo, unchangedAxisOne, unchangedAxisTwo) {
+    document.querySelector("#translation-hint").style.display = "none"
+    document.querySelector("#rotation-hint").style.display = "inline"
+    console.log("showing rotation hint")
+
+    document.querySelector("#rotation-left-changed-hint").textContent = changedAxisOne.directionName
+    document.querySelector("#rotation-right-changed-hint").textContent = changedAxisTwo.directionName
+    document.querySelector("#rotation-left-unchanged-hint").textContent = unchangedAxisOne.directionName
+    document.querySelector("#rotation-right-unchanged-hint").textContent = unchangedAxisTwo.directionName
+
+    document.querySelector("#rotation-left-changed-hint").style.color = changedAxisOne.color
+    document.querySelector("#rotation-right-changed-hint").style.color = changedAxisTwo.color
+    document.querySelector("#rotation-left-unchanged-hint").style.color = unchangedAxisOne.color
+    document.querySelector("#rotation-right-unchanged-hint").style.color = unchangedAxisTwo.color
+}
+
 /**
  * Returns a lookup table which maps a key code to a handler function 
  * 
@@ -489,11 +551,13 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
     translationKeyPairs.forEach(([backKey, frontKey], i) => {
         lookupTable[backKey] = () => {
             player.position = player.position.add(player.basis[i].scale(-1 * TRANSLATION_STEP))
-            document.querySelector("#hint").textContent = `You're moving ${dimensionInverses[i]} (without rotating), which you can undo by moving ${dimensionDescriptions[i]} using key ${frontKey}`
+            hintWithKeys(backKey, frontKey, true, axisDescriptions[i].color)
+            translationHint(axisDescriptions[i])
         }
         lookupTable[frontKey] = () => {
             player.position = player.position.add(player.basis[i].scale(TRANSLATION_STEP))
-            document.querySelector("#hint").textContent = `You're moving ${dimensionDescriptions[i]} (without rotating), which you can undo by moving ${dimensionInverses[i]} using key ${backKey}`
+            hintWithKeys(backKey, frontKey, false, axisDescriptions[i].color)
+            translationHint(axisDescriptions[i])
         }
     })
 
@@ -511,11 +575,19 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
 
             lookupTable[leftKey] = () => {
                 player.updateBasisByMatrix(leftMatrix);
-                document.querySelector("#hint").textContent = `You're rotating - changing what it would mean to move '${dimensionDescriptions[i]}' or '${dimensionDescriptions[j]}' (without changing your position, or the directions of the other axes). You can undo this rotation using ${rightKey}`
+                hintWithKeys(leftKey, rightKey, true, "teal")
+                rotationHint(
+                    ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
+                    ...axisDescriptions.filter((_, index) => ![i, j].includes(index))
+                )
             }
             lookupTable[rightKey] = () => {
                 player.updateBasisByMatrix(rightMatrix);
-                document.querySelector("#hint").textContent = `You're rotating - changing what it would mean to move '${dimensionDescriptions[i]}' or '${dimensionDescriptions[j]}' (without changing your position, or the directions of the other axes). You can undo this rotation using ${leftKey}`
+                hintWithKeys(leftKey, rightKey, false, "teal")
+                rotationHint(
+                    ...axisDescriptions.filter((_, index) => [i, j].includes(index)),
+                    ...axisDescriptions.filter((_, index) => ![i, j].includes(index))
+                )
             }
         }
     }
@@ -523,8 +595,12 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
     return lookupTable
 }
 
-const dimensionDescriptions = ["forwards", "right", "up", "ana"]
-const dimensionInverses = ["backwards", "left", "down", "kata"]
+const axisDescriptions = [
+    new AxisDescription("forwards", "backwards", "in front", "behind", "goldenrod"),
+    new AxisDescription("right", "left", "to the right", "to the left", "blue"),
+    new AxisDescription("up", "down", "above", "below", "green"),
+    new AxisDescription("ana", "kata", "ana", "kata", "hotpink"),
+]
 
 const table = createKeyBindingTable(
     // Translations (in the same order as `dimensionDescriptions`)
