@@ -274,6 +274,11 @@ class Sphere {
         this.removed = false
     }
 
+    getNormalAt(point) {
+        // (point - center) normalized
+        return point.add(this.positionVector.negate()).normalize();
+    }
+
     getCentre() {
         if (this.removed) {
             return null
@@ -365,6 +370,24 @@ class AxisAlignedHypercube {
         this.color = "black"
         this.color2 = seededRandom();
         this.removed = false
+    }
+
+    getNormalAt(point) {
+        const epsilon = 0.001;
+        // Create an array for the normal components.
+        const normalComponents = Array(this.dimensions.length).fill(0);
+        for (let i = 0; i < this.dimensions.length; i++) {
+            const lower = this.position.components[i];
+            const upper = this.position.components[i] + this.dimensions[i];
+            if (Math.abs(point.components[i] - lower) < epsilon) {
+                normalComponents[i] = -1;
+                break;  // assume only one face is hit
+            } else if (Math.abs(point.components[i] - upper) < epsilon) {
+                normalComponents[i] = 1;
+                break;
+            }
+        }
+        return new HighDimensionalVector(normalComponents).normalize();
     }
 
     getCentre () {
@@ -524,34 +547,25 @@ class Player {
 
     rayTrace(maze, output, gains) {
         output.clearRect(0, 0, output.canvas.width, output.canvas.height);
-
+    
         for (let shape of maze.shapes) {
             shape.color = "black"
         }
     
-        // Use a finer resolution
         const horizontalResolution = 10;
         const verticalResolution = 10;
-    
-        // Use a narrower field of view (e.g., 60 degrees instead of 90)
         const fieldOfView = Math.PI / 3;  // 60° vertical FOV
         const aspect = output.canvas.width / output.canvas.height;
         const halfFov = fieldOfView / 2;
         const halfHeight = Math.tan(halfFov);
         const halfWidth = aspect * halfHeight;
     
-        // Cast rays for each block on the screen
         for (let i = 0; i < output.canvas.width; i += horizontalResolution) {
             for (let j = 0; j < output.canvas.height; j += verticalResolution) {
-                // Compute normalized device coordinates [-1, 1]
                 const u = ((i + horizontalResolution / 2) / output.canvas.width) * 2 - 1;
                 const v = 1 - ((j + verticalResolution / 2) / output.canvas.height) * 2;
-    
-                // Scale these by the image plane dimensions
                 const uScaled = u * halfWidth;
                 const vScaled = v * halfHeight;
-    
-                // Compute the ray direction using the camera basis
                 const rayDir = this.forward
                     .add(this.right.scale(uScaled))
                     .add(this.up.scale(vScaled))
@@ -559,24 +573,25 @@ class Player {
     
                 const ray = new HighDimensionalRay(this.position, rayDir);
                 const closestShape = ray.findFirstShape(maze.shapes);
-    
                 if (closestShape) {
-                    // const distance = closestShape.distanceAlongRay(ray);
-                    // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
-                    // output.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
-
                     const distance = closestShape.distanceAlongRay(ray);
-                    // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
-                    // const v = (100/distance) * 100;
-                    const v = 100 - distance * 0.5/255*100
-                    const clamp = (v, min, max) => Math.max(max, Math.min(min, v));
-                    const brightness = clamp(0, 100, v);
+                    // Compute the intersection point
+                    const intersectionPoint = ray.positionVector.add(ray.unitVector.scale(distance));
+                    // Compute the surface normal using the new method
+                    const normal = closestShape.getNormalAt(intersectionPoint);
                     
-                    // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
-                    output.fillStyle = `hsl(${closestShape.color2*360}, 50%, ${brightness}%)`;
+                    const lightDir = new HighDimensionalVector([-1, -3, 2, 4]).normalize();
+                    // Lambertian shading: the more the surface faces the light, the brighter it is.
+                    const lambert = Math.max(0, normal.dot(lightDir));
+                    // Map lambert factor to brightness (e.g., 50%-100% brightness)
+                    const brightness = 50 + lambert * 50;
                     
-                    const color2d = closestShape.containsPoint(this.position) ? 0 : 180
-                    closestShape.color = `hsl(${color2d}, 100%, ${Math.max(50, brightness) / 2}%)` // blue on the 2D projection
+                    // Use the shape’s intrinsic color (e.g. shape.color2 interpreted as a hue) with the computed brightness.
+                    output.fillStyle = `hsl(${closestShape.color2 * 360}, 50%, ${brightness}%)`;
+    
+                    // Optionally update the 2D projection color for debugging:
+                    const color2d = closestShape.containsPoint(this.position) ? 0 : 180;
+                    closestShape.color = `hsl(${color2d}, 100%, ${Math.max(50, brightness) / 2}%)`;
                 } else {
                     output.fillStyle = "black";
                 }
@@ -584,6 +599,7 @@ class Player {
             }
         }
     }
+    
 }
 
 
