@@ -509,7 +509,7 @@ function hintWithKeys(leftKey, rightKey, leftKeyPressed, color) {
 }
 
 function translationHint(axis) {
-    console.log("showing translation hint")
+    // console.log("showing translation hint")
     document.querySelector("#translation-hint").style.display = "inline"
     document.querySelector("#rotation-hint").style.display = "none"
     
@@ -523,7 +523,6 @@ function translationHint(axis) {
 function rotationHint(changedAxisOne, changedAxisTwo, unchangedAxisOne, unchangedAxisTwo) {
     document.querySelector("#translation-hint").style.display = "none"
     document.querySelector("#rotation-hint").style.display = "inline"
-    console.log("showing rotation hint")
 
     document.querySelector("#rotation-left-changed-hint").textContent = changedAxisOne.inThatDirection
     document.querySelector("#rotation-right-changed-hint").textContent = changedAxisTwo.inThatDirection
@@ -630,9 +629,33 @@ const maxFreq = 3000
 
 const dimensions = 4;
 const offset = new HighDimensionalVector(Array(dimensions).fill(1)).scale(0.5).negate();
+
+const interpolateList = (vecs, numSubPoints=1) => {
+    if (vecs.length === 0) {
+        return [];
+    }
+    const interpolatedVecs = [];
+    let prev = vecs[0]
+    interpolatedVecs.push(prev);
+    for (let i = 1; i < vecs.length; i++) {
+
+        const next = vecs[i];
+
+        for (let j=0; j < numSubPoints; j++) {
+            const p = (j+1) / (numSubPoints+1);
+
+            const mid = prev.scale(1-p).add(next.scale(p));
+            interpolatedVecs.push(mid);
+        }
+
+        interpolatedVecs.push(next);
+    }
+    return interpolatedVecs;
+}
+
 const pointsForSoundSampling = [
-    ...zOrderCurveND(dimensions, 2).map(point => new HighDimensionalVector(point).add(offset)),
-    ...zOrderCurveND(dimensions, 2).map(point => new HighDimensionalVector(point).add(offset).scale(3)),
+    ...interpolateList(zOrderCurveND(dimensions, 2).map(point => new HighDimensionalVector(point).add(offset)), 1),
+    ...interpolateList(zOrderCurveND(dimensions, 2).map(point => new HighDimensionalVector(point).add(offset).scale(3)), 1),
 ]
 const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, pointsForSoundSampling.length)
 
