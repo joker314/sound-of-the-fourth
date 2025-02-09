@@ -1117,14 +1117,14 @@ window.addEventListener("keydown", (e) => {
     projectOntoAxisAlignedPlane(topProjection, maze, player, 0, 1)
     player.rayTrace(maze, output, gains)
 
-    // updateSound(gainNodes, pointsForSoundSampling, point => {
-    //     // const offset = new HighDimensionalVector(Array(point.components.length).fill(1)).scale(0.5).negate();
-    //     const scaledAndOffsetPoint = point.scale(100);
+    updateSound(gainNodes, pointsForSoundSampling, point => {
+        // const offset = new HighDimensionalVector(Array(point.components.length).fill(1)).scale(0.5).negate();
+        const scaledAndOffsetPoint = point.scale(100);
 
-    //     const rotatedPoint = (new Matrix(player.basis)).transformHighDimensionalVector(scaledAndOffsetPoint);
+        const rotatedPoint = (new Matrix(player.basis)).transformHighDimensionalVector(scaledAndOffsetPoint);
 
-    //     return maze.amplitudeAt(player.position.add(rotatedPoint));
-    // });
-    // audioCtx.resume()
+        return maze.amplitudeAt(player.position.add(rotatedPoint));
+    });
+    audioCtx.resume()
 })
 player.rayTrace(maze, output, gains)
