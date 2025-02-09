@@ -419,8 +419,14 @@ function renderMaze2D(ctx, maze, player) {
     // Render the player
     ctx.beginPath()
     ctx.strokeStyle = "red"
+    ctx.setLineDash([2, 5]);
     ctx.arc(player.position.x, player.position.y, 20, phi - Math.PI / 4, phi + Math.PI / 4)
     ctx.stroke()
+    ctx.beginPath()
+    ctx.fillStyle = "red"
+    ctx.setLineDash([]);
+    ctx.arc(player.position.x, player.position.y, 5, 0, 2 * Math.PI)
+    ctx.fill()
 
     // Recolour the obstacles
     player.look(maze)
