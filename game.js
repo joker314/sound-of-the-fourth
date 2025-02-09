@@ -608,6 +608,10 @@ class Maze {
         this.shapes = shapes 
     }
 
+    hasGameFinished () {
+        return this.shapes.every(shape => shape.removed)
+    }
+
     // TODO: see `imageToAudioDemo.js`, see if we can generalise the smooth-but-sharp falling off so it works for both
     // spheres and hypercubes?
     amplitudeAt (positionVector) {
@@ -890,6 +894,15 @@ table["Space"] = (e) => {
 
     player.score += maze.performCaptureAt(player.position)
     document.querySelector("#score").textContent = player.score
+
+    if (maze.hasGameFinished()) {
+        clearInterval(refreshTimeBasedScore)
+        document.querySelector("#screen-is-off").style.display = "none"
+        document.querySelector("#screen-is-on").style.display = "none"
+        document.querySelectorAll("canvas").forEach(canvas => canvas.style.display = "none")
+        document.querySelector("#you-win").style.display = "block"
+        document.querySelector("#hint").style.display = "none"
+    }
 }
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
