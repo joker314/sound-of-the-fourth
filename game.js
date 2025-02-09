@@ -901,7 +901,7 @@ table["Space"] = (e) => {
     document.querySelector("#score").textContent = player.score
 
     if (maze.hasGameFinished()) {
-        clearInterval(refreshTimeBasedScore)
+        clearInterval(timePenaltyInterval)
         document.querySelector("#screen-is-off").style.display = "none"
         document.querySelector("#screen-is-on").style.display = "none"
         document.querySelectorAll("canvas").forEach(canvas => canvas.style.display = "none")
