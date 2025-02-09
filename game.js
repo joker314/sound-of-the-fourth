@@ -134,11 +134,28 @@ class HighDimensionalRay {
         return firstShape
     }
 }
+function xoshiro128ss(a, b, c, d) {
+    return function() {
+        let t = b << 9, r = b * 5;
+        r = (r << 7 | r >>> 25) * 9;
+        c ^= a;
+        d ^= b;
+        b ^= c;
+        a ^= d;
+        c ^= t;
+        d = d << 11 | d >>> 21;
+        return (r >>> 0) / 4294967296;
+    }
+}
+
+const seedgen = () => (Math.random()*2**32)>>>0;
+const seededRandom = xoshiro128ss(3930871319, 2219299714, 591391995, 1572269650);
 
 class Sphere {
     constructor (positionVector, radius) {
         this.positionVector = positionVector
         this.radius = radius
+        this.color2 = seededRandom() * 100;
     }
 
     render2D (ctx) {
@@ -339,6 +356,16 @@ class Player {
                     const distance = closestShape.distanceAlongRay(ray);
                     const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
                     output.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
+
+                    // const distance = closestShape.distanceAlongRay(ray);
+                    // // const brightness = Math.max(0, Math.min(255, Math.floor(255 - distance * 0.5)));
+                    // // const v = (100/distance) * 100;
+                    // const v = 100 - distance * 0.5/255*100
+                    // const clamp = (v, min, max) => Math.max(max, Math.min(min, v));
+                    // const brightness = clamp(0, 100, v);
+                    
+                    // // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
+                    // output.fillStyle = `hsl(${closestShape.color2}, 50%, ${brightness}%)`;
                 } else {
                     output.fillStyle = "black";
                 }
@@ -359,6 +386,7 @@ const maze = new Maze([
     new AxisAlignedHypercube(new HighDimensionalVector([50, 50, 0, 0]), [50, 50, 50, 50]),
     new Sphere(new HighDimensionalVector([400, 100, 0, 0]), 50),
     new Sphere(new HighDimensionalVector([400, 300, 0, 0]), 80),
+    new Sphere(new HighDimensionalVector([400, 300, 100, 0]), 80),
 ])
 
 function renderMaze2D(ctx, maze, player) {
