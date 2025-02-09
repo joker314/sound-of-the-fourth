@@ -920,12 +920,12 @@ const screenOffPoints = -1
 const screenOnPoints = -10
 
 let lastTimeWithScreenOn = Infinity 
-let isScreenOn = true 
+let isScreenOn = false 
 
 const timePenaltyInterval = setInterval(() => {
     player.score += performance.now() - lastTimeWithScreenOn >= 1 ? screenOffPoints : screenOnPoints
     document.querySelector("#score").textContent = player.score
-}, 1000)
+}, 5000)
 
 table["KeyZ"] = () => {
     isScreenOn = !isScreenOn
@@ -937,6 +937,9 @@ table["KeyZ"] = () => {
     if (!isScreenOn) {
         lastTimeWithScreenOn = performance.now()
     }
+
+    document.querySelector("#screen-is-on").style.display = isScreenOn ? "block" : "none"
+    document.querySelector("#screen-is-off").style.display = !isScreenOn ? "block" : "none"
 }
 
 window.addEventListener("keydown", (e) => {
