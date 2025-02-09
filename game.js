@@ -434,15 +434,12 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
     const ROTATION_STEP = 0.1
 
     translationKeyPairs.forEach(([backKey, frontKey], i) => {
-        const frontVector = player.basis[i].scale(TRANSLATION_STEP)
-        const backVector = frontVector.negate()
-
         lookupTable[backKey] = () => {
-            player.position = player.position.add(backVector)
+            player.position = player.position.add(player.basis[i].scale(-1 * TRANSLATION_STEP))
             document.querySelector("#hint").textContent = `You're moving ${dimensionInverses[i]} (without rotating), which you can undo by moving ${dimensionDescriptions[i]} using key ${frontKey}`
         }
         lookupTable[frontKey] = () => {
-            player.position = player.position.add(frontVector)
+            player.position = player.position.add(player.basis[i].scale(TRANSLATION_STEP))
             document.querySelector("#hint").textContent = `You're moving ${dimensionDescriptions[i]} (without rotating), which you can undo by moving ${dimensionInverses[i]} using key ${backKey}`
         }
     })
