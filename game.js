@@ -525,10 +525,10 @@ function rotationHint(changedAxisOne, changedAxisTwo, unchangedAxisOne, unchange
     document.querySelector("#rotation-hint").style.display = "inline"
     console.log("showing rotation hint")
 
-    document.querySelector("#rotation-left-changed-hint").textContent = changedAxisOne.directionName
-    document.querySelector("#rotation-right-changed-hint").textContent = changedAxisTwo.directionName
-    document.querySelector("#rotation-left-unchanged-hint").textContent = unchangedAxisOne.directionName
-    document.querySelector("#rotation-right-unchanged-hint").textContent = unchangedAxisTwo.directionName
+    document.querySelector("#rotation-left-changed-hint").textContent = changedAxisOne.inThatDirection
+    document.querySelector("#rotation-right-changed-hint").textContent = changedAxisTwo.inThatDirection
+    document.querySelector("#rotation-left-unchanged-hint").textContent = unchangedAxisOne.inThatDirection
+    document.querySelector("#rotation-right-unchanged-hint").textContent = unchangedAxisTwo.inThatDirection
 
     document.querySelector("#rotation-left-changed-hint").style.color = changedAxisOne.color
     document.querySelector("#rotation-right-changed-hint").style.color = changedAxisTwo.color
