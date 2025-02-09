@@ -312,6 +312,7 @@ class Player {
     constructor (position, dimension) {
         this.position = position
         this.dimension = dimension
+        this.score = 0
 
         if (dimension < 3) {
             throw new Error("Need at least 3D to have a 'forward', 'right', and 'up' vector for the 2D raytracing")
@@ -408,7 +409,9 @@ class Player {
                     
                     // output.fillStyle = `rgb(${brightness}, ${closestShape.color2}, ${brightness})`;
                     output.fillStyle = `hsl(${closestShape.color2*360}, 50%, ${brightness}%)`;
-                    closestShape.color = `hsl(180, 100%, ${Math.max(50, brightness) / 2}%)` // blue on the 2D projection
+                    
+                    const color2d = closestShape.containsPoint(this.position) ? 0 : 180
+                    closestShape.color = `hsl(${color2d}, 100%, ${Math.max(50, brightness) / 2}%)` // blue on the 2D projection
                 } else {
                     output.fillStyle = "black";
                 }
@@ -435,6 +438,31 @@ class Maze {
         }
 
         return totalContribution
+    }
+
+    /**
+     * Returns `scoreChange`, which should be added to the player's current score
+     */
+    performCaptureAt(positionVector) {
+        const PENALTY = -5
+        const REWARD = 20
+
+        let score = 0
+        let capturedSuccessfully = false
+
+        for (let shape of this.shapes) {
+            if (shape.containsPoint(positionVector)) {
+                score += REWARD
+                capturedSuccessfully = true
+                shape.remove()
+            } 
+        }
+
+        if (!capturedSuccessfully) {
+            return PENALTY
+        }
+
+        return score
     }
 }
 
@@ -672,6 +700,15 @@ const table = createKeyBindingTable(
     player
 )
 
+table["Space"] = (e) => {
+    // Don't allow users to mash the space bar since it will incur high penalty
+    if (e.repeat) {
+        return;
+    }
+
+    player.score += maze.performCaptureAt(player.position)
+}
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const minFreq = 100
@@ -713,7 +750,8 @@ const gainNodes = setUpGainNodes(audioCtx, minFreq, maxFreq, pointsForSoundSampl
 
 window.addEventListener("keydown", (e) => {
     if (table[e.code]) {
-        table[e.code]()
+        table[e.code](e)
+        e.preventDefault()
     }
 
     projectOntoAxisAlignedPlane(topProjection, maze, player, 0, 1)
