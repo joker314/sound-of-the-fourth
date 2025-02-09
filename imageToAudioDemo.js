@@ -59,31 +59,10 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const minFreq = 100;
 const maxFreq = 3000;
 
-const gainNodes = Array(points.length);
-for (let i=0; i < points.length; i++) {
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0;
-    gainNode.connect(audioCtx.destination);
-    // const freq = minFreq + (maxFreq-minFreq) * i/points.length;
-    const freq = Math.exp(Math.log(minFreq) + i / points.length * (Math.log(maxFreq) - Math.log(minFreq)));
-    const oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = freq;
-    oscillator.connect(gainNode);
-    oscillator.start();
-    gainNodes[i] = gainNode;
-}
-
-const updateSound = () => {
-    for (let i=0; i < points.length; i++) {
-        const point = points[i];
-        const gainNode = gainNodes[i];
-        gainNode.gain.value = getAmplitude(point) * 0.05;
-    }
-}
+const gainNodes = setUpGainNodes(minFreq, maxFreq, points.length)
 
 const render = () => {
-    updateSound();
+    updateSound(gainNodes, points, getAmplitude);
     srcCtx.clearRect(0, 0, w, h);
     for (const point of points) {
         const amplitude = getAmplitude(point);

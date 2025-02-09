@@ -65,3 +65,26 @@ const zOrderCurve = (order, x0 = 0, y0 = 0, size = 1, points = []) => {
     }
     return points;
 };
+
+const setUpGainNodes = (minFreq, maxFreq, numberOfPoints) => Array(numberOfPoints).fill().map((_, i) => {
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0;
+    gainNode.connect(audioCtx.destination);
+    // const freq = minFreq + (maxFreq-minFreq) * i/points.length;
+    const freq = Math.exp(Math.log(minFreq) + i / points.length * (Math.log(maxFreq) - Math.log(minFreq)));
+    const oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = freq;
+    oscillator.connect(gainNode);
+    oscillator.start();
+
+    return gainNode
+})
+
+const updateSound = (gainNodes, points, getAmplitude) => {
+    for (let i=0; i < points.length; i++) {
+        const point = points[i];
+        const gainNode = gainNodes[i];
+        gainNode.gain.value = getAmplitude(point) * 0.05;
+    }
+}
