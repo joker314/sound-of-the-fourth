@@ -1024,3 +1024,4 @@ window.addEventListener("keydown", (e) => {
     });
     audioCtx.resume()
 })
+player.rayTrace(maze, output, gains)
