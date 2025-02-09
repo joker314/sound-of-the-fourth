@@ -27,6 +27,14 @@
                 user-select: none;
             }
 
+            kbd.small {
+                min-width: 10px;
+                height: 10px;
+                line-height: 10px;
+                padding: 2px;
+                margin: 1px;
+            }
+
             * {
                 font-family: sans-serif;
             }
@@ -34,7 +42,31 @@
     </head>
     <body>
         <h1>This page plays a sound - turn your volume down</h1>
-        <p>U/I/O/P/Down/Up for 3d translations. V/B/N/M/Left/Right for 3d rotations. A/S for 4d translation. D/F/G/H/J/K for 4d rotation.</p>
+        <p>
+            <kbd class="small">U</kbd>
+            <kbd class="small">I</kbd>
+            <kbd class="small">O</kbd>
+            <kbd class="small">P</kbd>
+            <kbd class="small">&darr;</kbd>
+            <kbd class="small">&uarr;</kbd> for 3D translations.
+            <kbd class="small">V</kbd>
+            <kbd class="small">B</kbd>
+            <kbd class="small">N</kbd>
+            <kbd class="small">M</kbd>
+            <kbd class="small">&larr;</kbd>
+            <kbd class="small">&rarr;</kbd>
+            for 3D rotations.
+            <kbd class="small">A</kbd>
+            <kbd class="small">S</kbd>
+            for 4D translation.
+            <kbd class="small">D</kbd>
+            <kbd class="small">F</kbd>
+            <kbd class="small">G</kbd>
+            <kbd class="small">H</kbd>
+            <kbd class="small">J</kbd>
+            <kbd class="small">K</kbd>
+            for 4D rotation.
+        </p>
         <p id="hint" style="visibility: hidden;">
             <kbd id="left-key">A</kbd>
             <kbd id="right-key">B</kbd>
