@@ -431,6 +431,7 @@ class Ray {
 class Player {
     constructor (position, dimension) {
         this.position = position
+        this.dimension = dimension
 
         if (dimension < 3) {
             throw new Error("Need at least 3D to have a 'forward', 'right', and 'up' vector for the 2D raytracing")
@@ -627,103 +628,73 @@ renderMaze2D(topProjection, maze, player)
 
 window.addEventListener("click", () => audioContext.resume())
 
-const increaseYaw = Matrix.yawMatrix(0.1)
-const increasePitch = Matrix.pitchMatrix(0.1)
-const increaseRoll = Matrix.rollMatrix(0.1)
-const increaseA = Matrix.AMatrix(0.1)
-const increaseB = Matrix.BMatrix(0.1)
-const increaseC = Matrix.CMatrix(0.1)
+/**
+ * Returns a lookup table which maps a key code to a handler function 
+ * 
+ * @param {*} translationKeyPairs 
+ * @param {*} rotationKeyPairs 
+ */
+function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
+    const lookupTable = {}
+    const TRANSLATION_STEP = 5
+    const ROTATION_STEP = 0.1
 
-const decreaseYaw = Matrix.yawMatrix(-0.1)
-const decreasePitch = Matrix.pitchMatrix(-0.1)
-const decreaseRoll = Matrix.rollMatrix(-0.1)
-const decreaseA = Matrix.AMatrix(-0.1)
-const decreaseB = Matrix.BMatrix(-0.1)
-const decreaseC = Matrix.CMatrix(-0.1)
+    translationKeyPairs.forEach(([backKey, frontKey], i) => {
+        const frontVector = player.basis[i].scale(TRANSLATION_STEP)
+        const backVector = frontVector.negate()
+
+        lookupTable[backKey] = () => { player.position = player.position.add(backVector) }
+        lookupTable[frontKey] = () => { player.position = player.position.add(frontVector) }
+    })
+
+    let counter = 0
+    for (let j = 0; j < player.dimension; j++) {
+        for (let i = 0; i < j; i++, counter++) {
+            if (counter >= rotationKeyPairs.length) {
+                throw new Error("Not enough rotations described for the given dimension")
+            }
+
+            const [leftKey, rightKey] = rotationKeyPairs[counter]
+
+            const leftMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
+            const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, ROTATION_STEP)
+
+            lookupTable[leftKey] = () => { player.updateBasisByMatrix(leftMatrix); console.log("applying", leftMatrix)}
+            lookupTable[rightKey] = () => { player.updateBasisByMatrix(rightMatrix); console.log("inverting by", rightMatrix) }
+        }
+    }
+
+    return lookupTable
+}
+
+const dimensionDescriptions = ["forwards", "right", "up", "ana"]
+const dimensionInverses = ["backwards", "left", "down", "kata"]
+
+const table = createKeyBindingTable(
+    // Translations (in the same order as `dimensionDescriptions`)
+    [
+        ["ArrowDown", "ArrowUp"],
+        ["KeyO", "KeyP"],
+        ["KeyU", "KeyI"],
+        ["KeyA", "KeyS"]
+    ],
+    // Rotations
+    [
+        ["ArrowLeft", "ArrowRight"],
+        ["KeyN", "KeyM"],
+        ["KeyV", "KeyB"],
+        ["KeyD", "KeyF"],
+        ["KeyG", "KeyH"],
+        ["KeyJ", "KeyK"]
+    ],
+    player
+)
 
 window.addEventListener("keydown", (e) => {
-    switch (e.code) {
-        // Rotate left (yaw)
-        case "ArrowLeft":
-            player.updateBasisByMatrix(decreaseYaw)
-            break;
-        // Rotate right (yaw)
-        case "ArrowRight":
-            player.updateBasisByMatrix(increaseYaw)
-            break;
-        // Translate forward
-        case "ArrowUp":
-            player.position = player.position.add(player.forward.scale(5))
-            break;
-        // Translate backward
-        case "ArrowDown":
-            player.position = player.position.add(player.forward.scale(-5))
-            break;
-        // Translate right
-        case "KeyP":
-            player.position = player.position.add(player.right.scale(5))
-            break;
-        // Translate left
-        case "KeyO":
-            player.position = player.position.add(player.right.scale(-5))
-            break;
-        // Translate up
-        case "KeyI":
-            player.position = player.position.add(player.up.scale(5))
-            break;
-        // Translate down
-        case "KeyU":
-            player.position = player.position.add(player.up.scale(-5))
-            break;
-        // Translate kata
-        case "KeyA":
-            player.position = player.position.add(player.ana.scale(-5))
-            break;
-        // Translate ana
-        case "KeyS":
-            player.position = player.position.add(player.ana.scale(5))
-            break;
-        // Rotate up (pitch) 
-        case "KeyM":
-            player.updateBasisByMatrix(decreasePitch)
-            break;
-        // Rotate down (pitch)
-        case "KeyN":
-            player.updateBasisByMatrix(increasePitch)
-            break;
-        // Rotate clockwise (roll)
-        case "KeyB":
-            player.updateBasisByMatrix(increaseRoll)
-            break;
-        // Rotate anticlockwise (roll)
-        case "KeyV":
-            player.updateBasisByMatrix(decreaseRoll)
-            break;
-        // Rotate-A "backwards"
-        case "KeyD":
-            player.updateBasisByMatrix(decreaseA)
-            break;
-        // Rotate-A "forwards"
-        case "KeyF":
-            player.updateBasisByMatrix(increaseA)
-            break;
-        // Rotate-B "backwards"
-        case "KeyG":
-            player.updateBasisByMatrix(decreaseB)
-            break;
-        // Rotate-B "forwards"
-        case "KeyH":
-            player.updateBasisByMatrix(increaseB)
-            break;
-        // Rotate-C "backwards"
-        case "KeyJ":
-            player.updateBasisByMatrix(decreaseC)
-            break;
-        // Rotate-C "forwards"
-        case "KeyK":
-            player.updateBasisByMatrix(increaseC)
-            break;
+    if (table[e.code]) {
+        table[e.code]()
     }
+
     renderMaze2D(topProjection, maze, player)
     player.rayTrace4d(maze, output, gains)
 })
