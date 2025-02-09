@@ -504,14 +504,6 @@ class Player {
     }
 
     updateBasisByMatrix(matrix) {
-        // this.basis = this.basis.map(basisVector => matrix.transformHighDimensionalVector(basisVector))
-        // this.basis = this.basis.map(basisVector => matrix.transpose().transformHighDimensionalVector(basisVector))
-        // this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
-        // this.basis = matrix.matmul(new Matrix(this.basis).transpose()).transpose().rowVectors;
-        // this.basis = new Matrix(this.basis).matmul(matrix).rowVectors;
-
-        // leftMatrix.matmul(new Matrix(player.basis)).rowVectors;
-
         this.basis = matrix.matmul(new Matrix(this.basis)).rowVectors;
     }
 
@@ -825,20 +817,6 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
             const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
 
             lookupTable[leftKey] = () => {
-                // const leftMatrix = Matrix.planarRotationMatrix(i,j, player.dimension, ROTATION_STEP)
-                // const a = ().matmul(leftMatrix)
-                // const I = Matrix.identityMatrix(player.basis.length)
-                // const a = (Matrix.identityMatrix(player.basis.length)).matmul(leftMatrix)
-                // const a = (new Matrix(player.basis).transpose()).matmul(leftMatrix)
-                // const a = (new Matrix(player.basis)).matmul(leftMatrix)
-                // const a = I.matmul(leftMatrix)
-                // const a = leftMatrix;
-
-                // player.basis = leftMatrix.matmul(new Matrix(player.basis)).rowVectors;
-
-                // console.log(a.toString)
-
-                // player.updateBasisByMatrix(a);
                 player.updateBasisByMatrix(leftMatrix);
 
                 hintWithKeys(leftKey, rightKey, true, "teal")
@@ -848,8 +826,6 @@ function createKeyBindingTable(translationKeyPairs, rotationKeyPairs, player) {
                 )
             }
             lookupTable[rightKey] = () => {
-                // const rightMatrix = Matrix.planarRotationMatrix(i, j, player.dimension, -ROTATION_STEP)
-
                 player.updateBasisByMatrix(rightMatrix);
                 hintWithKeys(leftKey, rightKey, false, "teal")
                 rotationHint(
